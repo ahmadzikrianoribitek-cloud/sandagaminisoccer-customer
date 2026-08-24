@@ -7292,7 +7292,7 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
         // admin: MEMBER aktif/libur + BOOKING aktual. Slot 18:00 tetap OFF.
         const listJam = ["07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00", "24:00"];
         const listHariKey = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
-        let globalCache = { member: {}, booking: {}, sparring: {}, pemasukan: {}, minuman: {}, pengeluaran: {}, teamLogos: {} };
+        let globalCache = { member: {}, memberTanpaJadwal: {}, booking: {}, sparring: {}, pemasukan: {}, minuman: {}, pengeluaran: {}, teamLogos: {} };
 
         function getNamaHari(dateStr) {
             let days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -8546,6 +8546,8 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             if(!list) return;
 
             const unique = new Map();
+
+            // 1) Member yang mempunyai jadwal tetap.
             Object.values(globalCache.member || {}).forEach(byHari => {
                 Object.values(byHari || {}).forEach(item => {
                     if(!item || item.type === 'off') return;
@@ -8553,6 +8555,29 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
                     if(!nama || nama.toUpperCase() === 'OFF') return;
                     const key = nama.toLowerCase();
                     if(!unique.has(key)) unique.set(key, item);
+                });
+            });
+
+            // 2) Member tanpa jadwal tetap.
+            //    Data dapat berasal dari node khusus `memberTanpaJadwal`
+            //    atau dari record member yang ditandai tanpaJadwal.
+            Object.values(globalCache.memberTanpaJadwal || {}).forEach(item => {
+                if(!item || item.type === 'off') return;
+                const nama = String(item.nama || item.namaTim || item.teamName || '').trim();
+                if(!nama || nama.toUpperCase() === 'OFF') return;
+                const key = nama.toLowerCase();
+                if(!unique.has(key)) {
+                    unique.set(key, { ...item, nama, type:'member-tanpa-jadwal' });
+                }
+            });
+
+            Object.values(globalCache.member || {}).forEach(byHari => {
+                Object.values(byHari || {}).forEach(item => {
+                    if(!item || item.type === 'off' || !item.tanpaJadwal) return;
+                    const nama = String(item.nama || item.namaTim || item.teamName || '').trim();
+                    if(!nama || nama.toUpperCase() === 'OFF') return;
+                    const key = nama.toLowerCase();
+                    if(!unique.has(key)) unique.set(key, { ...item, nama, type:'member-tanpa-jadwal' });
                 });
             });
 
@@ -8633,16 +8658,56 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
 
         onValue(ref(db, 'member'), (snapshot) => {
             globalCache.member = {};
+            globalCache.memberTanpaJadwal = globalCache.memberTanpaJadwal || {};
             if (snapshot.exists()) {
                 snapshot.forEach((child) => {
                     const m = child.val() || {};
                     const key = child.key;
-                    const isOff = String(m.nama || '').toUpperCase() === 'OFF';
+                    const nama = String(m.nama || m.namaTim || m.teamName || '').trim();
+                    const isOff = nama.toUpperCase() === 'OFF';
+
+                    // Record tanpa hari/jam tetap tetap disimpan sebagai member,
+                    // tetapi tidak dimasukkan ke matrix jadwal agar tidak mengganggu
+                    // tampilan jadwal mingguan.
+                    const tanpaJadwal = !!m.tanpaJadwal || (!String(m.hari || '').trim() && !String(m.jam || '').trim());
+                    if(tanpaJadwal && nama && !isOff) {
+                        globalCache.memberTanpaJadwal[key] = {
+                            ...m,
+                            nama,
+                            type:'member-tanpa-jadwal',
+                            key
+                        };
+                        return;
+                    }
+
                     if(!globalCache.member[m.jam]) globalCache.member[m.jam] = {};
                     globalCache.member[m.jam][m.hari] = { ...m, nama:m.nama || '', hari:m.hari || '', jam:m.jam || '', type:isOff?'off':'member', mulai:m.mulai || '', berhenti:m.berhenti || '', liburTanggal:m.liburTanggal || {}, key };
                 });
             }
             renderAll();
+            renderCustomerMember();
+        });
+
+        // Sinkronkan member tanpa jadwal tetap jika fitur tersebut menyimpan
+        // datanya pada node Firebase khusus.
+        onValue(ref(db, 'memberTanpaJadwal'), (snapshot) => {
+            // Jangan menghapus data tanpa jadwal yang mungkin tersimpan langsung
+            // di node `member` ketika node khusus ini belum ada.
+            const merged = { ...(globalCache.memberTanpaJadwal || {}) };
+            if(snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    const m = child.val() || {};
+                    const nama = String(m.nama || m.namaTim || m.teamName || '').trim();
+                    if(!nama || nama.toUpperCase() === 'OFF') return;
+                    merged[child.key] = {
+                        ...m,
+                        nama,
+                        type:'member-tanpa-jadwal',
+                        key:child.key
+                    };
+                });
+            }
+            globalCache.memberTanpaJadwal = merged;
             renderCustomerMember();
         });
 
