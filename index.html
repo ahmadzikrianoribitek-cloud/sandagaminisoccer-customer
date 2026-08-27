@@ -15278,7 +15278,7 @@ main {
     padding: 0 !important;
     overflow: visible !important;
     width: 100% !important;
-    max-width: 980px !important;
+    max-width: none !important;
     margin-left: auto !important;
     margin-right: auto !important;
 }
@@ -22054,3 +22054,215 @@ body:has(#page-customer-member:not(.hidden)) main {
   }
 })();
 </script>
+
+<!-- FINAL PATCH V132: DESKTOP — HEADER, DOCK BAR, DAN GRID KONSISTEN & RESPONSIF -->
+<style id="desktop-responsive-shell-consistency-v132">
+/*
+   Khusus DESKTOP (min-width:641px). Tampilan HP (<=640px) sama sekali
+   tidak disentuh oleh patch ini.
+
+   1) Header (logo+judul Beranda, dan header internal tiap menu: Booking,
+      Harga, Sparing, Member, Jadwal) dan Dock Bar bawah memakai SATU
+      formula lebar yang sama, sehingga lebar keduanya selalu identik dan
+      sama-sama menyesuaikan lebar layar (menyempit di layar sedang,
+      melebar di layar besar, tetap proporsional dan tidak "kosong").
+   2) Grid daftar Member & daftar Harga menyesuaikan jumlah kolom secara
+      otomatis mengikuti lebar layar: makin lebar layar, makin banyak
+      kartu berjejer dalam satu baris; makin sempit, kolom otomatis
+      berkurang, tanpa kartu menjadi terlalu kecil atau terlalu lebar.
+*/
+@media (min-width:641px){
+  :root{
+    /* Lebar "shell" bersama: mengikuti lebar layar, dengan batas atas
+       agar tetap nyaman dilihat di monitor sangat lebar. */
+    --shell-w: min(1440px, calc(100vw - 48px));
+  }
+
+  /* Header Beranda & wadah konten utama semua menu: lebar sama & responsif. */
+  header.w-full.max-w-6xl,
+  main.w-full.max-w-6xl{
+    width: var(--shell-w) !important;
+    max-width: var(--shell-w) !important;
+  }
+
+  /* Dock bar memakai lebar yang persis sama dengan header/konten di atas,
+     sehingga posisi kiri-kanannya selalu sejajar pada semua ukuran layar. */
+  #customer-bottom-nav{
+    width: var(--shell-w) !important;
+    max-width: var(--shell-w) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* Header internal tiap menu (Booking/Harga/Sparing/Member/Jadwal) sudah
+     mengikuti lebar 100% dari main, jadi otomatis ikut konsisten. */
+}
+
+/* Grid daftar MEMBER: kolom menyesuaikan otomatis sesuai lebar layar. */
+@media (min-width:641px){
+  .customer-member-grid{
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+  }
+}
+@media (min-width:1100px){
+  .customer-member-grid{
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Grid daftar HARGA: kelompok hari bisa sejajar lebih banyak di layar lebar. */
+@media (min-width:900px){
+  .customer-price-grid{
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  }
+}
+</style>
+
+<!-- FINAL PATCH V133: DESKTOP — SAMAKAN INSET HARGA / SPARING / JADWAL DENGAN BOOKING & MEMBER -->
+<style id="desktop-page-padding-match-booking-member-v133">
+/*
+   Akar masalah "header dan isi belum sama lebar dengan dock" pada menu
+   Harga, Sparing, dan Jadwal: ketiga wrapper halaman ini masih memakai
+   padding bawaan (p-3/p-4 sm:p-6) di desktop, sedangkan Booking dan
+   Member sudah di-nol-kan paddingnya sehingga header/kartu di dalamnya
+   bisa memenuhi lebar penuh "main" (yang lebarnya sudah disamakan
+   dengan dock lewat patch V132 di atas).
+
+   Fix: nolkan padding wrapper Harga/Sparing/Jadwal juga, KHUSUS desktop
+   (min-width:641px), meniru pola Booking & Member yang sudah pas.
+   HP (<=640px) tidak disentuh sama sekali.
+*/
+@media (min-width:641px){
+  #page-customer-price,
+  #page-customer-sparring,
+  #page-customer-schedule{
+    padding: 0 !important;
+  }
+}
+</style>
+
+<!-- FINAL PATCH V137: SPARING — HEADER 1:1 DENGAN DOCK (STICKY, BUKAN FIXED) -->
+<style id="final-sparing-header-sticky-match-booking-v137">
+/*
+   Akar masalah header Sparing belum 1:1 dengan lebar dock:
+   header Sparing dibuat position:fixed dengan angka px sendiri
+   (final-sparing-mobile-position-match-booking), terpisah dari alur
+   halaman. Booking/Harga sudah benar karena headernya position:sticky
+   dan otomatis mengikuti lebar wrapper halaman yang paddingnya sudah
+   dinolkan — wrapper itu yang sudah disamakan lebarnya dengan dock.
+
+   Fix: header Sparing dipindah ke mekanisme sticky yang sama, sehingga
+   lebarnya otomatis ikut wrapper (=lebar dock), bukan angka px terpisah
+   yang bisa meleset.
+*/
+@media (max-width:640px){
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring .customer-sparring-page-head{
+    position:sticky !important;
+    top:16px !important;
+    left:auto !important;
+    right:auto !important;
+    width:100% !important;
+    max-width:none !important;
+    margin:0 0 10px !important;
+    box-sizing:border-box !important;
+    z-index:9990 !important;
+  }
+
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring{
+    padding-top:0 !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    position:relative !important;
+    overflow:visible !important;
+  }
+}
+
+@media (max-width:380px){
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring .customer-sparring-page-head{
+    top:6px !important;
+  }
+}
+</style>
+
+<!-- FINAL PATCH V137: SPARING — HILANGKAN KACA PEMBUNGKUS PALING BESAR -->
+<style id="final-sparing-remove-outer-glass-v137">
+/*
+   Bungkus terluar halaman Sparing (frame besar di belakang header +
+   daftar tim) dihilangkan total agar tampilan lebih clean. Kaca pada
+   header dan pada tiap kartu tim TIDAK disentuh — hanya bungkus
+   terbesarnya saja yang dihapus.
+*/
+#page-customer-sparring{
+  background:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  border-radius:0 !important;
+}
+#page-customer-sparring::before,
+#page-customer-sparring::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+}
+</style>
+
+<!-- FINAL PATCH V138: JADWAL — HILANGKAN KACA PEMBUNGKUS PERIODE -->
+<style id="final-jadwal-remove-period-glass-v138">
+/*
+   Kotak "Periode ..." di halaman Jadwal (di antara header biru dan
+   tabel) sebelumnya memakai efek kaca: background putih transparan +
+   border + sedikit shadow, sehingga terlihat seperti bingkai kaca
+   besar tersendiri (persis yang ditandai merah pada gambar). Efek
+   kaca ini dihapus total di sini — teks "Periode ..." kini duduk
+   langsung tanpa kotak/bingkai, senada dengan tampilan bersih di
+   halaman Member. Ukuran, posisi, dan isi dropdown tidak diubah.
+*/
+#page-customer-schedule .customer-schedule-period-control{
+  background:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+</style>
+
+<!-- FINAL PATCH V138: SPARING — SAMAKAN LEBAR HEADER & ISI DENGAN DOCK BAR -->
+<style id="final-sparing-exact-dock-width-v138">
+/*
+   Header Sparing selama ini selebar penuh (tanpa inset), sedangkan
+   kartu tim di bawahnya masih mendapat inset 10px (calc(100% - 10px))
+   dari patch versi lama (V16), sehingga lebar header dan lebar isi
+   tidak sejajar dengan dock bar di bawahnya. Di sini keduanya
+   disamakan: header dan seluruh kartu memakai lebar 100% tanpa inset
+   tambahan — persis seperti halaman Member yang lebarnya sudah pas
+   dengan dock bar.
+*/
+@media (max-width:640px){
+  #page-customer-sparring .customer-sparring-page-head,
+  #page-customer-sparring #customer-sparring-list,
+  #page-customer-sparring #customer-sparring-list > *,
+  #page-customer-sparring .customer-sparring-card{
+    width:100% !important;
+    max-width:none !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    box-sizing:border-box !important;
+  }
+}
+@media (max-width:380px){
+  #page-customer-sparring .customer-sparring-page-head,
+  #page-customer-sparring #customer-sparring-list > *,
+  #page-customer-sparring .customer-sparring-card{
+    width:100% !important;
+    max-width:none !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+}
+</style>
