@@ -7832,120 +7832,61 @@ document.addEventListener('DOMContentLoaded', () => {
         window.salinRekeningCustomer = async () => { const nomor='7340198877'; try { await navigator.clipboard.writeText(nomor); alert('Nomor rekening berhasil disalin: '+nomor); } catch(e) { alert('Nomor rekening: '+nomor); } };
         document.addEventListener('DOMContentLoaded',()=>{updateCustomerDpOptions(); const metode=document.getElementById('cust-metode'); if(metode){metode.addEventListener('change',updateCustomerPaymentInfo);updateCustomerPaymentInfo();}});
 
-        window.renderCustomerSparring = () => {
-    const list = document.getElementById('customer-sparring-list');
-    if(!list) return;
+        // ================= SPARING: RENDER 2 SECTION (VERSI TUNGGAL & FINAL) =================
+        (function(){
+          function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+          function norm(v){let s=String(v||'');try{s=s.normalize('NFKC')}catch(e){}return s.trim().replace(/\s+/g,' ').toLowerCase();}
+          function dataUrl(v){const r=String(v||'').trim();if(!r)return '';if(/^data:image\//i.test(r))return r;if(/^[A-Za-z0-9+/=\r\n]+$/.test(r.replace(/\s/g,'')))return 'data:image/png;base64,'+r.replace(/\s/g,'');return r;}
+          function getCache(){return (typeof globalCache!=='undefined'&&globalCache)||(window.globalCache)||window.__sandagaGlobalCache||{};}
+          function getLogo(name,itemLogo){
+            if(itemLogo)return dataUrl(itemLogo);
+            const c=getCache(), logos=c.teamLogos||{}; const n=norm(name); if(!n)return '';
+            const key=encodeURIComponent(n).replace(/\./g,'%2E');
+            if(logos[key]?.logo)return dataUrl(logos[key].logo);
+            const f=Object.values(logos).find(x=>norm(x?.normalizedNama||x?.nama||'')===n&&String(x?.logo||'').trim());
+            return dataUrl(f?.logo);
+          }
+          function initials(n){return esc(String(n||'TM').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'TM');}
+          function logoHtml(name,itemLogo){const logo=getLogo(name,itemLogo), safe=esc(name||'Tim'); if(logo)return `<div class="sparing-final-logo"><img src="${esc(logo)}" alt="Logo ${safe}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="sparing-final-logo-fallback" style="display:none">${initials(name)}</span></div>`;return `<div class="sparing-final-logo"><span class="sparing-final-logo-fallback">${initials(name)}</span></div>`;}
+          function active(item,now,today){const d=String(item?.tanggal||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d<today)return false;if(d===today){const m=String(item?.jam||'').match(/(\d{1,2})(?::(\d{2}))?/);if(m){const h=+m[1],mi=+(m[2]||0);if(h>=0&&h<=23&&mi>=0&&mi<=59&&now>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0,0))return false;}}return true;}
+          function meta(item,ok){const d=item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-';const j=esc(item?.jam||'-');return `<div class="${ok?'sparing-final-meta':'customer-sparring-meta'}"><span>📅 ${d}</span><span>⏰ ${j}</span><span class="${ok?'ok':'customer-sparring-status'}">${ok?'✓ SUDAH DAPAT LAWAN':'⌛ MENCARI LAWAN'}</span></div>`;}
+          function pendingCard(key,item){const a=String(item?.timA||'').trim();const phone=String(item?.noHp||'').trim()||((String(item?.catatan||'').match(/(?:No\.?\s*HP|Nomor HP|WhatsApp)\s*:\s*([+0-9\s-]+)/i)||[,''])[1]||'').trim();return `<div class="customer-sparring-card">${meta(item,false)}<div class="sparing-final-team">${logoHtml(a,item?.logoA)}<div><div class="sparing-final-label">Tim yang mencari lawan</div><div class="sparing-final-name">${esc(a)}</div></div></div><div class="customer-sparring-vs">VS <span>Belum ada lawan</span></div><div class="customer-sparring-actions"><button type="button" class="customer-sparring-select" data-sparring-key="${esc(key)}" data-sparring-phone="${esc(phone)}">⚽ Pilih Tim Ini</button></div></div>`;}
+          function matchedCard(item){const a=String(item?.timA||'').trim(),b=String(item?.timB||item?.teamB||item?.lawan||'').trim();return `<div class="sparing-final-matched"><div class="sparing-final-meta"><span>📅 ${item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-'}</span><span>⏰ ${esc(item?.jam||'-')}</span><span class="ok">✓ SUDAH DAPAT LAWAN</span></div><div class="sparing-final-matchup"><div class="sparing-final-match-team">${logoHtml(a,item?.logoA)}<div class="sparing-final-name">${esc(a||'Tim A')}</div></div><div class="sparing-final-vs">VS</div><div class="sparing-final-match-team">${logoHtml(b,item?.logoB)}<div class="sparing-final-name">${esc(b||'Lawan')}</div></div></div><div class="sparing-final-footer">🤝 Pertandingan sudah mendapatkan lawan</div></div>`;}
+          function section(icon,title,sub,count,html){return `<section class="sparing-final-section"><div class="sparing-final-head"><div class="sparing-final-title-wrap"><div class="sparing-final-icon">${icon}</div><div><h3 class="sparing-final-title">${title}</h3><p class="sparing-final-subtitle">${sub}</p></div></div><div class="sparing-final-count">${count}</div></div><div class="sparing-final-grid">${html}</div></section>`;}
+          window.renderCustomerSparring = function(){
+            const list=document.getElementById('customer-sparring-list');if(!list)return;
+            const c=getCache(), entries=Object.entries(c.sparring||{}).map(([k,v])=>[k,v||{}]);
+            const now=new Date(),today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+            const pending=entries.filter(([k,x])=>{const s=norm(x?.status);return !!x?.timA && !x?.timB && s!=='matched' && active(x,now,today);});
+            const matched=entries.filter(([k,x])=>{
+              const s=norm(x?.status);
+              const isMatched = !!x?.timA && (!!x?.timB || !!x?.teamB || !!x?.lawan || s==='matched');
+              if(!isMatched) return false;
+              const raw=String(x?.tanggal||'').trim();
+              const m=raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+              if(!m) return true;
+              return m[0]>=today;
+            });
+            pending.sort((a,b)=>String(a[1].tanggal||'').localeCompare(String(b[1].tanggal||''))||String(a[1].jam||'').localeCompare(String(b[1].jam||'')));
+            matched.sort((a,b)=>String(a[1].tanggal||'').localeCompare(String(b[1].tanggal||''))||String(a[1].jam||'').localeCompare(String(b[1].jam||'')));
+            const phtml=pending.length?pending.map(x=>pendingCard(x[0],x[1])).join(''):'<div class="sparing-final-empty">Belum ada tim yang sedang mencari lawan.</div>';
+            const mhtml=matched.length?matched.map(x=>matchedCard(x[1])).join(''):'<div class="sparing-final-empty">Belum ada tim yang sudah mendapatkan lawan.</div>';
+            list.classList.add('sparing-two-section-root');
+            list.innerHTML=section('🔎','TIM YANG MENCARI LAWAN','Cari tim yang siap diajak sparing.',pending.length,phtml)+section('🤝','TIM YANG SUDAH DAPAT LAWAN','Pertandingan yang sudah menemukan lawan.',matched.length,mhtml);
 
-    /*
-     * Tampilkan hanya permintaan sparing yang:
-     * 1. belum mendapatkan lawan, dan
-     * 2. tanggal mainnya hari ini atau tanggal yang akan datang.
-     *
-     * Tanggal yang sudah lewat hanya disembunyikan dari halaman customer.
-     * Data Firebase tidak dihapus, sehingga riwayat/admin tetap aman.
-     */
-    const now = new Date();
-    const todayKey =
-        now.getFullYear() + '-' +
-        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-        String(now.getDate()).padStart(2, '0');
-
-    const entries = Object.entries(globalCache.sparring || {})
-        .map(([key,item]) => [key,item || {}])
-        .filter(([key,item]) => {
-            if(item.status === 'matched' || !item.timA) return false;
-
-            const tanggal = String(item.tanggal || '').trim();
-
-            // Data tanpa tanggal tidak ditampilkan agar tidak menjadi
-            // permintaan sparing "tanpa batas waktu".
-            if(!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) return false;
-
-            // Hilangkan jika tanggal sudah lewat.
-            if(tanggal < todayKey) return false;
-
-            // Jika tanggalnya hari ini, cek JAM main juga.
-            // Contoh: sekarang 15/08 jam 17:00 dan sparing jam 20:00
-            // masih boleh tampil. Setelah lewat jam 20:00, kartu hilang.
-            if(tanggal === todayKey){
-                const jamText = String(item.jam || '').trim();
-                const jamMatch = jamText.match(/(\d{1,2})(?::(\d{2}))?/);
-
-                if(jamMatch){
-                    const hour = Number(jamMatch[1]);
-                    const minute = Number(jamMatch[2] || 0);
-
-                    if(Number.isFinite(hour) && hour >= 0 && hour <= 23 &&
-                       Number.isFinite(minute) && minute >= 0 && minute <= 59){
-                        const waktuMain = new Date(
-                            now.getFullYear(),
-                            now.getMonth(),
-                            now.getDate(),
-                            hour,
-                            minute,
-                            0,
-                            0
-                        );
-
-                        if(now >= waktuMain) return false;
-                    }
-                }
+            if(!list.dataset.sparringClickBound){
+                list.addEventListener('click', (event) => {
+                    const button = event.target.closest('.customer-sparring-select');
+                    if(!button) return;
+                    event.preventDefault();
+                    const key = button.dataset.sparringKey || '';
+                    const phone = button.dataset.sparringPhone || '';
+                    window.pilihSparringCustomer(key, phone);
+                });
+                list.dataset.sparringClickBound = '1';
             }
-
-            return true;
-        })
-        .sort((a,b) =>
-            String(a[1].tanggal || '').localeCompare(String(b[1].tanggal || '')) ||
-            String(a[1].jam || '').localeCompare(String(b[1].jam || ''))
-        );
-
-    if(!entries.length){
-        list.innerHTML = '<div class="rounded-2xl bg-white/55 border border-white/70 p-6 text-center font-bold text-slate-600 backdrop-blur-md">Belum ada tim yang sedang mencari lawan.</div>';
-        return;
-    }
-
-    list.innerHTML = entries.map(([key,item]) => {
-        const tanggal = item.tanggal ? item.tanggal.split('-').reverse().join('/') : '-';
-        const jam = item.jam || '-';
-        // Catatan internal tidak ditampilkan di daftar customer.
-        // Data tetap disimpan agar fungsi Hubungi tetap dapat mengambil nomor WA.
-        const catatan = '';
-        const rawPhone = String(item.noHp || '').trim() ||
-            ((String(item.catatan || '').match(/(?:No\.?\s*HP|Nomor HP|WhatsApp)\s*:\s*([+0-9\s-]+)/i) || [,''])[1] || '').trim();
-
-        return `<div class="customer-sparring-card">
-            <div class="customer-sparring-meta">
-                <span>📅 ${tanggal}</span>
-                <span>⏰ ${escapeHtmlCustomerSparring(jam)}</span>
-                <span class="customer-sparring-status">⌛ MENCARI LAWAN</span>
-            </div>
-            <div class="customer-sparring-team">${escapeHtmlCustomerSparring(item.timA)}</div>
-            <div class="customer-sparring-vs">VS <span>Belum ada lawan</span></div>
-            ${catatan}
-            <div class="customer-sparring-actions">
-                <button type="button"
-                    class="customer-sparring-select"
-                    data-sparring-key="${escapeHtmlCustomerSparring(key)}"
-                    data-sparring-phone="${escapeHtmlCustomerSparring(rawPhone)}">
-                    ⚽ Pilih Tim Ini
-                </button>
-            </div>
-        </div>`;
-    }).join('');
-
-    // Event delegation: tombol tetap berfungsi walaupun kartu dibuat ulang secara dinamis.
-    if(!list.dataset.sparringClickBound){
-        list.addEventListener('click', (event) => {
-            const button = event.target.closest('.customer-sparring-select');
-            if(!button) return;
-            event.preventDefault();
-            const key = button.dataset.sparringKey || '';
-            const phone = button.dataset.sparringPhone || '';
-            window.pilihSparringCustomer(key, phone);
-        });
-        list.dataset.sparringClickBound = '1';
-    }
-};
+          };
+        })();
 
         window.normalisasiNomorWhatsAppCustomer = (nomor) => {
             let n = String(nomor || '').trim().replace(/[^0-9+]/g, '');
@@ -12655,7 +12596,7 @@ body.booking-success-open{overflow:hidden;}
 
         const headerRect = header.getBoundingClientRect();
         const headerTop = headerRect.top;
-        const headerTop = headerRect.top;
+        const headerBottom = headerRect.bottom;
 
         page.querySelectorAll('.customer-sparring-card').forEach(card=>{
             const r = card.getBoundingClientRect();
@@ -13667,6 +13608,101 @@ body:has(#page-customer-member:not(.hidden)) #customer-bottom-nav{visibility:vis
 })();
 </script>
 
+
+
+
+<style id="fix-sparing-team-name-single-contrast">
+/* FIX: nama tim di bawah logo hanya SATU kali.
+   Hilangkan teks inisial/fallback yang bisa muncul sebagai tulisan kedua,
+   lalu buat nama tim utama lebih tegas dan kontras. */
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo-fallback,
+#page-customer-sparring .sparing-final-team .sparing-final-logo-fallback {
+    display:none !important;
+    visibility:hidden !important;
+}
+
+#page-customer-sparring .sparing-final-match-team .sparing-final-name,
+#page-customer-sparring .sparing-final-team .sparing-final-name {
+    display:block !important;
+    width:100% !important;
+    margin:0 !important;
+    color:#08251a !important;
+    font-size:.72rem !important;
+    line-height:1.15 !important;
+    font-weight:950 !important;
+    text-align:center !important;
+    white-space:normal !important;
+    overflow-wrap:anywhere !important;
+    word-break:normal !important;
+    text-shadow:0 1px 0 rgba(255,255,255,.85) !important;
+}
+
+#page-customer-sparring .sparing-final-match-team {
+    gap:8px !important;
+}
+
+@media (max-width:640px){
+    #page-customer-sparring .sparing-final-match-team .sparing-final-name,
+    #page-customer-sparring .sparing-final-team .sparing-final-name {
+        font-size:.68rem !important;
+        line-height:1.15 !important;
+    }
+}
+</style>
+
+<style id="fix-sparing-all-text-contrast-v2">
+/* SPARRING: semua teks dibuat kontras terhadap background */
+#page-customer-sparring .sparing-final-title,
+#page-customer-sparring .sparing-final-subtitle,
+#page-customer-sparring .sparing-final-label,
+#page-customer-sparring .sparing-final-count,
+#page-customer-sparring .sparing-final-empty,
+#page-customer-sparring .sparing-final-footer,
+#page-customer-sparring .sparing-final-name,
+#page-customer-sparring .sparing-final-vs,
+#page-customer-sparring .sparing-final-vs span {
+    color:#102a43 !important;
+    text-shadow:none !important;
+}
+
+#page-customer-sparring .sparing-final-title {
+    font-weight:950 !important;
+}
+#page-customer-sparring .sparing-final-subtitle {
+    color:#35556f !important;
+    font-weight:800 !important;
+}
+#page-customer-sparring .sparing-final-label {
+    color:#416176 !important;
+    font-weight:900 !important;
+}
+#page-customer-sparring .sparing-final-count {
+    color:#075985 !important;
+}
+#page-customer-sparring .sparing-final-footer {
+    color:#047857 !important;
+}
+
+/* VS tetap putih agar terbaca di tombol hijau */
+#page-customer-sparring .sparing-final-matchup .sparing-final-vs {
+    color:#fff !important;
+}
+
+/* Tulisan pada kartu tim yang sedang mencari lawan */
+#page-customer-sparring .customer-sparring-vs {
+    color:#173b20 !important;
+    font-weight:950 !important;
+}
+#page-customer-sparring .customer-sparring-vs span {
+    color:#365b4a !important;
+    font-weight:850 !important;
+}
+
+@media (max-width:640px){
+    #page-customer-sparring .sparing-final-title {font-size:.7rem !important;}
+    #page-customer-sparring .sparing-final-subtitle {font-size:.51rem !important;}
+}
+</style>
 </body>
 <style id="customer-home-desktop-buttons-final">
 /* DESKTOP: tombol menu utama dibuat lebih besar dan lebih mudah diklik.
@@ -16585,6 +16621,37 @@ main {
 }
 </style>
 
+<style id="sparring-card-scroll-shift-fix">
+/* FIX BUG: kartu "Tim yang mencari lawan" geser kanan/kiri saat discroll di HP.
+   Penyebab: V17 di atas melebarkan kartu pakai kombinasi
+   width:calc(100vw - 24px) + left:50% + transform:translateX(-50%).
+   Karena posisi kartu dihitung dari DUA rumus 100vw yang terpisah (width dan
+   transform), saat address bar browser HP menciut/melebar ketika discroll,
+   nilai 100vw berubah sesaat dan kedua rumus itu bisa sempat tidak sinkron
+   satu frame -> kartu terlihat "loncat" ke kiri/kanan.
+   PERBAIKAN: khusus kartu sparring, kembalikan ke pola width:100% mengikuti
+   parent (yang lebarnya sudah benar dari V15), tanpa breakout 100vw/transform
+   sama sekali. Halaman lain (harga, booking, jadwal) tidak disentuh. */
+@media (max-width:640px){
+    #page-customer-sparring #customer-sparring-list > *,
+    #page-customer-sparring .customer-sparring-card{
+        position:static !important;
+        left:auto !important;
+        transform:none !important;
+        width:100% !important;
+        max-width:100% !important;
+        margin-left:0 !important;
+        margin-right:0 !important;
+    }
+}
+@media (max-width:380px){
+    #page-customer-sparring #customer-sparring-list > *,
+    #page-customer-sparring .customer-sparring-card{
+        width:100% !important;
+        max-width:100% !important;
+    }
+}
+</style>
 
 <style id="v19-remove-schedule-outer-glass">
 /* V19 — HP: hapus kaca pembungkus luar pada menu Jadwal.
@@ -22264,5 +22331,1356 @@ body:has(#page-customer-member:not(.hidden)) main {
     margin-left:0 !important;
     margin-right:0 !important;
   }
+}
+</style>
+
+<!-- FINAL PATCH: SPARING 2 SECTION — DEFINITIVE RENDER (REVISI KECE) -->
+<style id="sparing-two-section-final-v2">
+#page-customer-sparring #customer-sparring-list.sparing-two-section-root{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:22px !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+}
+#page-customer-sparring .sparing-final-section{
+  display:block !important;width:100% !important;margin:0 !important;
+  padding:16px 14px 18px !important;border-radius:24px !important;box-sizing:border-box !important;
+  background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.06)) !important;
+  border:1px solid rgba(255,255,255,.24) !important;
+  backdrop-filter:blur(18px) saturate(140%) !important;-webkit-backdrop-filter:blur(18px) saturate(140%) !important;
+  box-shadow:0 16px 34px rgba(2,12,22,.22),inset 0 1px 0 rgba(255,255,255,.12) !important;
+  position:relative !important;overflow:hidden !important;
+}
+#page-customer-sparring .sparing-final-section::before{
+  content:'';position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,#2563eb,#60a5fa,#93c5fd) !important;
+}
+#page-customer-sparring .sparing-two-section-root > .sparing-final-section:nth-of-type(2)::before{
+  background:linear-gradient(90deg,#059669,#34d399,#6ee7b7) !important;
+}
+#page-customer-sparring .sparing-final-head{
+  display:flex !important;align-items:center !important;justify-content:space-between !important;gap:10px !important;
+  margin:0 0 13px !important;padding:0 2px !important;
+}
+#page-customer-sparring .sparing-final-title-wrap{display:flex !important;align-items:center !important;gap:10px !important;min-width:0 !important;}
+#page-customer-sparring .sparing-final-icon{
+  width:36px !important;height:36px !important;flex:0 0 36px !important;display:grid !important;place-items:center !important;
+  border-radius:12px !important;background:linear-gradient(135deg,#173a88,#2563eb) !important;color:#fff !important;
+  box-shadow:0 8px 18px rgba(37,99,235,.35) !important;font-size:.92rem !important;
+}
+#page-customer-sparring .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-icon{
+  background:linear-gradient(135deg,#047857,#10b981) !important;box-shadow:0 8px 18px rgba(16,185,129,.35) !important;
+}
+#page-customer-sparring .sparing-final-title{margin:0 !important;color:#fff !important;font-size:.78rem !important;line-height:1.15 !important;font-weight:950 !important;letter-spacing:.045em !important;text-shadow:0 1px 3px rgba(0,0,0,.25) !important;}
+#page-customer-sparring .sparing-final-subtitle{margin:3px 0 0 !important;color:rgba(255,255,255,.72) !important;font-size:.55rem !important;line-height:1.25 !important;font-weight:750 !important;}
+#page-customer-sparring .sparing-final-count{
+  min-width:30px !important;height:26px !important;padding:0 9px !important;display:grid !important;place-items:center !important;
+  border-radius:999px !important;color:#fff !important;background:rgba(37,99,235,.35) !important;
+  border:1px solid rgba(147,197,253,.55) !important;font-size:.55rem !important;font-weight:950 !important;
+  box-shadow:0 4px 10px rgba(2,12,22,.18) !important;
+}
+#page-customer-sparring .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-count{
+  background:rgba(16,185,129,.32) !important;border-color:rgba(110,231,183,.55) !important;
+}
+#page-customer-sparring .sparing-final-grid{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:14px !important;width:100% !important;}
+#page-customer-sparring .sparing-final-grid > *{width:100% !important;box-sizing:border-box !important;margin:0 !important;}
+#page-customer-sparring .sparing-final-empty{
+  width:100% !important;box-sizing:border-box !important;padding:18px 14px !important;border-radius:18px !important;
+  background:rgba(255,255,255,.08) !important;border:1px dashed rgba(255,255,255,.32) !important;color:rgba(255,255,255,.78) !important;
+  text-align:center !important;font-size:.62rem !important;line-height:1.4 !important;font-weight:800 !important;
+}
+/* Kartu: TIM YANG MENCARI LAWAN */
+#page-customer-sparring .sparing-final-grid .customer-sparring-card{
+  transition:transform .22s ease,box-shadow .22s ease !important;
+}
+#page-customer-sparring .sparing-final-grid .customer-sparring-card:hover{
+  transform:translateY(-3px) !important;box-shadow:0 20px 38px rgba(2,12,22,.30) !important;
+}
+#page-customer-sparring .sparing-final-team{display:flex !important;align-items:center !important;justify-content:center !important;gap:13px !important;margin:13px 0 9px !important;}
+#page-customer-sparring .sparing-final-logo{
+  width:60px !important;height:60px !important;flex:0 0 60px !important;display:grid !important;place-items:center !important;overflow:visible !important;
+  border-radius:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;
+}
+#page-customer-sparring .sparing-final-logo img{width:100% !important;height:100% !important;padding:0 !important;object-fit:contain !important;display:block !important;border-radius:0 !important;filter:drop-shadow(0 8px 14px rgba(2,12,22,.35)) !important;}
+#page-customer-sparring .sparing-final-logo-fallback{width:100% !important;height:100% !important;display:grid !important;place-items:center !important;color:#173b88 !important;background:linear-gradient(135deg,#eff6ff,#dbeafe) !important;border-radius:50% !important;box-shadow:0 8px 18px rgba(15,23,42,.22) !important;font-size:.85rem !important;font-weight:950 !important;}
+#page-customer-sparring .sparing-final-name{min-width:0 !important;color:#fff !important;font-size:.82rem !important;line-height:1.2 !important;font-weight:950 !important;overflow-wrap:anywhere !important;text-shadow:0 1px 3px rgba(0,0,0,.25) !important;}
+#page-customer-sparring .sparing-final-label{margin:0 0 3px !important;color:rgba(255,255,255,.62) !important;font-size:.5rem !important;font-weight:850 !important;letter-spacing:.06em !important;text-transform:uppercase !important;}
+/* Kartu: TIM YANG SUDAH DAPAT LAWAN */
+#page-customer-sparring .sparing-final-matched{
+  padding:16px !important;border-radius:22px !important;position:relative !important;overflow:hidden !important;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(236,253,245,.85)) !important;
+  border:1px solid rgba(110,231,183,.55) !important;
+  box-shadow:0 16px 34px rgba(4,120,87,.16),inset 0 1px 0 rgba(255,255,255,.95) !important;
+  transition:transform .22s ease,box-shadow .22s ease !important;
+}
+#page-customer-sparring .sparing-final-matched:hover{transform:translateY(-3px) !important;box-shadow:0 22px 42px rgba(4,120,87,.22) !important;}
+#page-customer-sparring .sparing-final-meta{display:flex !important;align-items:center !important;justify-content:center !important;flex-wrap:wrap !important;gap:5px !important;margin-bottom:13px !important;}
+#page-customer-sparring .sparing-final-meta span{padding:5px 9px !important;border-radius:999px !important;background:#fff !important;border:1px solid #dbeafe !important;color:#1e3a8a !important;font-size:.5rem !important;line-height:1 !important;font-weight:900 !important;}
+#page-customer-sparring .sparing-final-meta .ok{color:#047857 !important;background:#d1fae5 !important;border-color:#6ee7b7 !important;}
+#page-customer-sparring .sparing-final-matchup{display:grid !important;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr) !important;align-items:center !important;gap:8px !important;}
+#page-customer-sparring .sparing-final-match-team{display:flex !important;flex-direction:column !important;align-items:center !important;gap:7px !important;text-align:center !important;min-width:0 !important;}
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo{
+  width:66px !important;height:66px !important;flex-basis:66px !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo img{filter:drop-shadow(0 8px 16px rgba(4,120,87,.30)) !important;}
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo-fallback{box-shadow:0 8px 18px rgba(16,185,129,.22) !important;}
+#page-customer-sparring .sparing-final-match-team .sparing-final-name{width:100% !important;font-size:.66rem !important;color:#0f2f21 !important;text-shadow:none !important;}
+#page-customer-sparring .sparing-final-vs{
+  width:42px !important;height:42px !important;display:grid !important;place-items:center !important;border-radius:14px !important;color:#fff !important;
+  background:linear-gradient(135deg,#047857,#10b981) !important;box-shadow:0 8px 18px rgba(4,120,87,.32) !important;
+  font-size:.6rem !important;font-weight:950 !important;letter-spacing:.03em !important;
+}
+#page-customer-sparring .sparing-final-footer{
+  display:flex !important;align-items:center !important;justify-content:center !important;gap:6px !important;
+  text-align:center !important;margin-top:12px !important;padding-top:10px !important;border-top:1px solid rgba(16,185,129,.22) !important;
+  color:#047857 !important;font-size:.56rem !important;font-weight:900 !important;
+}
+@media(max-width:640px){
+ #page-customer-sparring #customer-sparring-list.sparing-two-section-root{gap:18px !important;}
+ #page-customer-sparring .sparing-final-section{padding:13px 12px 15px !important;border-radius:20px !important;}
+ #page-customer-sparring .sparing-final-grid{grid-template-columns:1fr !important;gap:11px !important;}
+ #page-customer-sparring .sparing-final-title{font-size:.7rem !important;}
+ #page-customer-sparring .sparing-final-subtitle{font-size:.51rem !important;}
+ #page-customer-sparring .sparing-final-icon{width:32px !important;height:32px !important;flex-basis:32px !important;border-radius:10px !important;}
+ #page-customer-sparring .sparing-final-team{gap:11px !important;margin:11px 0 8px !important;}
+ #page-customer-sparring .sparing-final-logo{width:56px !important;height:56px !important;flex-basis:56px !important;}
+ #page-customer-sparring .sparing-final-matched{padding:13px !important;border-radius:18px !important;}
+ #page-customer-sparring .sparing-final-match-team .sparing-final-logo{width:60px !important;height:60px !important;flex-basis:60px !important;}
+ #page-customer-sparring .sparing-final-matchup{grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr) !important;gap:6px !important;}
+ #page-customer-sparring .sparing-final-vs{width:38px !important;height:38px !important;border-radius:12px !important;}
+}
+</style>
+
+
+<!-- FINAL PATCH V141: SPARING HEADER LOCK + CUT LINE IDENTICAL MEMBER -->
+<style id="final-sparing-header-lock-v141">
+@media (max-width:640px){
+  /* Header Sparing dikunci terhadap viewport sejak awal scroll.
+     Lebar mengikuti dock: 12px kiri/kanan, bukan lebar viewport penuh. */
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring .customer-sparring-page-head{
+    position:fixed !important;
+    top:16px !important;
+    left:12px !important;
+    right:12px !important;
+    width:auto !important;
+    max-width:none !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    z-index:99990 !important;
+    transform:none !important;
+  }
+
+  /* Ruang kompensasi agar konten pertama tidak masuk ke header yang fixed. */
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring #customer-sparring-list{
+    padding-top:96px !important;
+  }
+
+  @media (max-height:700px){
+    body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring #customer-sparring-list{
+      padding-top:92px !important;
+    }
+  }
+}
+
+@media (max-width:380px){
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring .customer-sparring-page-head{
+    top:6px !important;
+    left:9px !important;
+    right:9px !important;
+  }
+  body:has(#page-customer-sparring:not(.hidden)) #page-customer-sparring #customer-sparring-list{
+    padding-top:86px !important;
+  }
+}
+</style>
+
+<script id="final-sparing-header-lock-cut-v141">
+(function(){
+  'use strict';
+  if(window.__sparingHeaderLockCutV141) return;
+  window.__sparingHeaderLockCutV141 = true;
+  const MOBILE_MAX = 640;
+  let raf = 0;
+
+  function sync(){
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){
+      const page = document.getElementById('page-customer-sparring');
+      const header = page && page.querySelector('.customer-sparring-page-head');
+      const nav = document.getElementById('customer-bottom-nav');
+      if(!page || !header) return;
+
+      const mobile = window.matchMedia('(max-width:'+MOBILE_MAX+'px)').matches;
+      const active = !page.classList.contains('hidden');
+      const cards = page.querySelectorAll('.customer-sparring-card');
+
+      if(!mobile || !active || !nav){
+        cards.forEach(card=>{
+          card.classList.remove('sparing-member-partially-cut','sparing-member-fully-cut');
+          [
+            '--sparing-member-header-clip-top','--sparing-member-dock-clip-bottom',
+            '--sparing-member-header-radius-left','--sparing-member-header-radius-right',
+            '--sparing-member-dock-radius'
+          ].forEach(v=>card.style.removeProperty(v));
+        });
+        return;
+      }
+
+      /* Acuan garis dan radius SAMA PERSIS dengan Member. */
+      const headerRect = header.getBoundingClientRect();
+      const headerStyle = getComputedStyle(header);
+      const headerTop = headerRect.top;
+      const headerRadiusLeft = Math.max(0,Math.min(40,parseFloat(headerStyle.borderTopLeftRadius)||0));
+      const headerRadiusRight = Math.max(0,Math.min(40,parseFloat(headerStyle.borderTopRightRadius)||0));
+
+      const navRect = nav.getBoundingClientRect();
+      if(navRect.height<=0 || navRect.top>=window.innerHeight || navRect.bottom<=0) return;
+      const navBottom = navRect.bottom;
+      const navStyle = getComputedStyle(nav);
+      const navRadius = Math.max(0,Math.min(40,Math.max(
+        parseFloat(navStyle.borderBottomLeftRadius)||0,
+        parseFloat(navStyle.borderBottomRightRadius)||0
+      )));
+
+      cards.forEach(card=>{
+        const rect = card.getBoundingClientRect();
+        const h = rect.height;
+        if(h<=0) return;
+
+        /* Garis potong ATAS = tepat garis atas header. */
+        const topClip = Math.min(h,Math.max(0,headerTop-rect.top));
+        /* Garis potong BAWAH = tepat garis bawah dock. */
+        const bottomOverlap = Math.min(h,Math.max(0,rect.bottom-navBottom));
+        const bottomRatio = bottomOverlap/h;
+
+        if(topClip>=h && bottomRatio>=0.999){
+          card.classList.remove('sparing-member-partially-cut');
+          card.classList.add('sparing-member-fully-cut');
+          return;
+        }
+
+        if(topClip>0 || bottomOverlap>0){
+          card.classList.remove('sparing-member-fully-cut');
+          card.classList.add('sparing-member-partially-cut');
+          card.style.setProperty('--sparing-member-header-clip-top',topClip.toFixed(2)+'px');
+          card.style.setProperty('--sparing-member-dock-clip-bottom',bottomOverlap.toFixed(2)+'px');
+          card.style.setProperty('--sparing-member-header-radius-left',headerRadiusLeft.toFixed(2)+'px');
+          card.style.setProperty('--sparing-member-header-radius-right',headerRadiusRight.toFixed(2)+'px');
+          card.style.setProperty('--sparing-member-dock-radius',navRadius.toFixed(2)+'px');
+        }else{
+          card.classList.remove('sparing-member-partially-cut','sparing-member-fully-cut');
+          [
+            '--sparing-member-header-clip-top','--sparing-member-dock-clip-bottom',
+            '--sparing-member-header-radius-left','--sparing-member-header-radius-right',
+            '--sparing-member-dock-radius'
+          ].forEach(v=>card.style.removeProperty(v));
+        }
+      });
+    });
+  }
+
+  function install(){
+    window.addEventListener('scroll',sync,{passive:true});
+    window.addEventListener('resize',sync,{passive:true});
+    window.addEventListener('orientationchange',sync,{passive:true});
+    if(typeof window.showPage==='function' && !window.showPage.__sparingHeaderLockV141){
+      const oldShowPage=window.showPage;
+      const wrapped=function(){
+        const result=oldShowPage.apply(this,arguments);
+        requestAnimationFrame(sync);
+        setTimeout(sync,60);
+        setTimeout(sync,220);
+        return result;
+      };
+      wrapped.__sparingHeaderLockV141=true;
+      window.showPage=wrapped;
+    }
+    sync();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
+<!-- FINAL PATCH V143: SPARING — CUT LOGIC 1:1 DENGAN MEMBER -->
+<style id="sparing-intersection-identical-member-v143">
+@media (max-width:640px){
+  /*
+     IDENTIK DENGAN LOGIKA MEMBER:
+     1. Garis potong atas = headerRect.top (garis PALING ATAS header),
+        BUKAN headerBottom.
+     2. Radius atas = borderTopLeftRadius / borderTopRightRadius header.
+     3. Garis potong bawah = navRect.bottom (garis PALING BAWAH dock).
+     4. Radius bawah = borderBottomLeft/RightRadius dock.
+  */
+  #page-customer-sparring .customer-sparring-card.sparing-member-exact-v143{
+    clip-path:inset(
+      var(--sp143-header-clip-top,0px)
+      0
+      var(--sp143-dock-clip-bottom,0px)
+      0
+      round
+      var(--sp143-header-top-left-radius,0px)
+      var(--sp143-header-top-right-radius,0px)
+      var(--sp143-dock-bottom-radius,0px)
+      var(--sp143-dock-bottom-radius,0px)
+    ) !important;
+    -webkit-clip-path:inset(
+      var(--sp143-header-clip-top,0px)
+      0
+      var(--sp143-dock-clip-bottom,0px)
+      0
+      round
+      var(--sp143-header-top-left-radius,0px)
+      var(--sp143-header-top-right-radius,0px)
+      var(--sp143-dock-bottom-radius,0px)
+      var(--sp143-dock-bottom-radius,0px)
+    ) !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+
+  #page-customer-sparring .customer-sparring-card.sparing-member-exact-v143.sparing-member-fully-v143{
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+
+  #page-customer-sparring .customer-sparring-page-head{z-index:9990 !important;}
+  #customer-bottom-nav{z-index:9999 !important;}
+}
+</style>
+<script id="sparing-intersection-identical-member-v143-script">
+(function(){
+  'use strict';
+  if(window.__sparingIntersectionIdenticalMemberV143) return;
+  window.__sparingIntersectionIdenticalMemberV143 = true;
+
+  const MOBILE_MAX = 640;
+  let rafId = 0;
+
+  function syncSparingCardsExactlyLikeMember(){
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(function(){
+      const page = document.getElementById('page-customer-sparring');
+      const nav = document.getElementById('customer-bottom-nav');
+      if(!page) return;
+
+      const mobile = window.matchMedia('(max-width:'+MOBILE_MAX+'px)').matches;
+      const active = !page.classList.contains('hidden');
+      const cards = page.querySelectorAll('.customer-sparring-card');
+
+      if(!mobile || !active || !nav){
+        cards.forEach(card=>{
+          card.classList.remove('sparing-member-exact-v143','sparing-member-fully-v143');
+          [
+            '--sp143-header-clip-top',
+            '--sp143-dock-clip-bottom',
+            '--sp143-header-top-left-radius',
+            '--sp143-header-top-right-radius',
+            '--sp143-dock-bottom-radius'
+          ].forEach(v=>card.style.removeProperty(v));
+        });
+        return;
+      }
+
+      const header = page.querySelector('.customer-sparring-page-head');
+      if(!header) return;
+
+      const headerRect = header.getBoundingClientRect();
+      const headerStyle = getComputedStyle(header);
+
+      /* PERSIS MEMBER: garis potong = headerRect.top. */
+      const headerTop = headerRect.top;
+
+      const headerTopLeftRadius = Math.max(
+        0, Math.min(40, parseFloat(headerStyle.borderTopLeftRadius) || 0)
+      );
+      const headerTopRightRadius = Math.max(
+        0, Math.min(40, parseFloat(headerStyle.borderTopRightRadius) || 0)
+      );
+
+      const navRect = nav.getBoundingClientRect();
+      if(
+        navRect.height <= 0 ||
+        navRect.top >= window.innerHeight ||
+        navRect.bottom <= 0
+      ){
+        cards.forEach(card=>{
+          card.classList.remove('sparing-member-exact-v143','sparing-member-fully-v143');
+        });
+        return;
+      }
+
+      /* PERSIS MEMBER: garis bawah = navRect.bottom. */
+      const navBottom = navRect.bottom;
+      const navStyle = getComputedStyle(nav);
+      const navBottomLeftRadius = Math.max(
+        0, Math.min(40, parseFloat(navStyle.borderBottomLeftRadius) || 0)
+      );
+      const navBottomRightRadius = Math.max(
+        0, Math.min(40, parseFloat(navStyle.borderBottomRightRadius) || 0)
+      );
+      const navBottomRadius = Math.max(navBottomLeftRadius, navBottomRightRadius);
+
+      cards.forEach(card=>{
+        const rect = card.getBoundingClientRect();
+        const h = rect.height;
+        if(h <= 0) return;
+
+        /* PERSIS MEMBER: headerTop - rect.top. */
+        const topClip = Math.min(h, Math.max(0, headerTop - rect.top));
+
+        /* PERSIS MEMBER: rect.bottom - navBottom. */
+        const bottomOverlap = Math.min(h, Math.max(0, rect.bottom - navBottom));
+
+        if(topClip >= h){
+          card.classList.remove('sparing-member-exact-v143','sparing-member-fully-v143');
+          card.style.setProperty('--sp143-header-clip-top', h.toFixed(2)+'px');
+          card.style.setProperty('--sp143-dock-clip-bottom', Math.max(0,bottomOverlap).toFixed(2)+'px');
+          card.style.setProperty('--sp143-header-top-left-radius', headerTopLeftRadius.toFixed(2)+'px');
+          card.style.setProperty('--sp143-header-top-right-radius', headerTopRightRadius.toFixed(2)+'px');
+          card.style.setProperty('--sp143-dock-bottom-radius', navBottomRadius.toFixed(2)+'px');
+          continue;
+        }
+
+        if(topClip > 0 || bottomOverlap > 0){
+          card.classList.add('sparing-member-exact-v143');
+          card.classList.remove('sparing-member-fully-v143');
+          card.style.setProperty('--sp143-header-clip-top', topClip.toFixed(2)+'px');
+          card.style.setProperty('--sp143-dock-clip-bottom', bottomOverlap.toFixed(2)+'px');
+          card.style.setProperty('--sp143-header-top-left-radius', headerTopLeftRadius.toFixed(2)+'px');
+          card.style.setProperty('--sp143-header-top-right-radius', headerTopRightRadius.toFixed(2)+'px');
+          card.style.setProperty('--sp143-dock-bottom-radius', navBottomRadius.toFixed(2)+'px');
+        }else{
+          card.classList.remove('sparing-member-exact-v143','sparing-member-fully-v143');
+          [
+            '--sp143-header-clip-top',
+            '--sp143-dock-clip-bottom',
+            '--sp143-header-top-left-radius',
+            '--sp143-header-top-right-radius',
+            '--sp143-dock-bottom-radius'
+          ].forEach(v=>card.style.removeProperty(v));
+        }
+      });
+    });
+  }
+
+  function install(){
+    window.addEventListener('scroll',syncSparingCardsExactlyLikeMember,{passive:true});
+    window.addEventListener('resize',syncSparingCardsExactlyLikeMember,{passive:true});
+    window.addEventListener('orientationchange',syncSparingCardsExactlyLikeMember,{passive:true});
+
+    const oldShowPage = window.showPage;
+    if(typeof oldShowPage === 'function' && !oldShowPage.__sparingIntersectionV143){
+      const wrapped = function(){
+        const result = oldShowPage.apply(this,arguments);
+        requestAnimationFrame(syncSparingCardsExactlyLikeMember);
+        setTimeout(syncSparingCardsExactlyLikeMember,60);
+        setTimeout(syncSparingCardsExactlyLikeMember,220);
+        return result;
+      };
+      wrapped.__sparingIntersectionV143 = true;
+      window.showPage = wrapped;
+    }
+
+    syncSparingCardsExactlyLikeMember();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded',install,{once:true});
+  }else{
+    install();
+  }
+})();
+</script>
+
+<style id="final-sparing-standalone-cards-v1">
+/* FINAL SPARING — hapus card pembungkus besar, setiap card berdiri sendiri */
+#page-customer-sparring .sparing-two-section-root{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+#page-customer-sparring .sparing-final-section{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 0 20px !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  overflow:visible !important;
+}
+
+#page-customer-sparring .sparing-final-section::before{
+  display:none !important;
+  content:none !important;
+}
+
+/* Header bagian TIM tetap mengikuti lebar area header Sparing */
+#page-customer-sparring .sparing-final-head{
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin:0 0 10px !important;
+  padding:0 2px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+/* Area card tidak lagi menjadi grid 2 kolom; satu card = satu baris penuh */
+#page-customer-sparring .sparing-final-grid{
+  display:flex !important;
+  flex-direction:column !important;
+  width:100% !important;
+  max-width:none !important;
+  gap:12px !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+#page-customer-sparring .sparing-final-grid > *,
+#page-customer-sparring .sparing-final-grid .customer-sparring-card,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+}
+
+/* Card tim benar-benar berdiri sendiri */
+#page-customer-sparring .sparing-final-grid .customer-sparring-card,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched{
+  background:linear-gradient(135deg,rgba(35,24,72,.88),rgba(76,29,149,.78),rgba(49,46,129,.82)) !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+  border-radius:20px !important;
+  box-shadow:0 12px 28px rgba(30,20,70,.22),inset 0 1px 0 rgba(255,255,255,.16) !important;
+  color:#fff !important;
+}
+
+/* Semua teks isi Sparing dibuat putih agar kontras */
+#page-customer-sparring .sparing-final-grid .customer-sparring-card,
+#page-customer-sparring .sparing-final-grid .customer-sparring-card *,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched *{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.30) !important;
+}
+
+/* Badge status tetap diberi latar sendiri supaya mudah dibaca */
+#page-customer-sparring .sparing-final-grid .customer-sparring-meta > span,
+#page-customer-sparring .sparing-final-grid .sparing-final-meta > span{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(255,255,255,.14) !important;
+  border-color:rgba(255,255,255,.24) !important;
+}
+
+#page-customer-sparring .sparing-final-grid .customer-sparring-meta .customer-sparring-status,
+#page-customer-sparring .sparing-final-grid .sparing-final-meta .ok{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(16,185,129,.34) !important;
+  border-color:rgba(167,243,208,.42) !important;
+}
+
+#page-customer-sparring .sparing-final-grid .customer-sparring-select,
+#page-customer-sparring .sparing-final-grid button[onclick*="pilihSparringCustomer"]{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:linear-gradient(135deg,#7c3aed,#6d28d9) !important;
+  border-color:rgba(255,255,255,.32) !important;
+}
+
+@media(max-width:640px){
+  #page-customer-sparring .sparing-final-section{margin-bottom:16px !important;}
+  #page-customer-sparring .sparing-final-grid{gap:10px !important;}
+  #page-customer-sparring .sparing-final-grid .customer-sparring-card,
+  #page-customer-sparring .sparing-final-grid .sparing-final-matched{
+    border-radius:18px !important;
+  }
+}
+</style>
+
+
+<style id="final-sparing-v144-navy-clean">
+/* V144 — SPARING: tanpa kaca pembungkus, card individual navy */
+#page-customer-sparring .sparing-two-section-root,
+#page-customer-sparring .sparing-final-section,
+#page-customer-sparring .sparing-final-section::before,
+#page-customer-sparring .sparing-final-section::after{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+#page-customer-sparring .sparing-final-section{
+  padding:0 !important;
+  border-radius:0 !important;
+  overflow:visible !important;
+  margin:0 0 22px !important;
+}
+
+/* Header tiap kelompok: tidak dibungkus kaca */
+#page-customer-sparring .sparing-final-head{
+  width:100% !important;
+  margin:0 0 10px !important;
+  padding:0 2px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+#page-customer-sparring .sparing-final-title,
+#page-customer-sparring .sparing-final-title-wrap h3{
+  color:#08264d !important;
+  -webkit-text-fill-color:#08264d !important;
+  text-shadow:none !important;
+}
+#page-customer-sparring .sparing-final-subtitle,
+#page-customer-sparring .sparing-final-title-wrap p{
+  color:#365474 !important;
+  -webkit-text-fill-color:#365474 !important;
+  text-shadow:none !important;
+}
+
+/* Area daftar benar-benar polos */
+#page-customer-sparring .sparing-final-grid{
+  display:flex !important;
+  flex-direction:column !important;
+  width:100% !important;
+  gap:12px !important;
+  padding:0 !important;
+  margin:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+
+/* Empty state jangan menjadi kaca besar */
+#page-customer-sparring .sparing-final-empty{
+  width:100% !important;
+  padding:12px 8px !important;
+  margin:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  color:#365474 !important;
+  -webkit-text-fill-color:#365474 !important;
+  text-shadow:none !important;
+}
+
+/* Card pertandingan individual — NAVY */
+#page-customer-sparring .sparing-final-grid .customer-sparring-card,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched{
+  width:100% !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+  padding:16px !important;
+  border-radius:20px !important;
+  background:linear-gradient(135deg,#0b2a50 0%,#0a2344 52%,#071b35 100%) !important;
+  border:1px solid rgba(91,157,220,.42) !important;
+  box-shadow:0 12px 28px rgba(2,18,38,.28), inset 0 1px 0 rgba(255,255,255,.10) !important;
+  color:#fff !important;
+}
+
+/* Seluruh teks dalam card putih */
+#page-customer-sparring .sparing-final-grid .customer-sparring-card *,
+#page-customer-sparring .sparing-final-grid .sparing-final-matched *{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.38) !important;
+}
+
+/* Badge tanggal/jam/status */
+#page-customer-sparring .sparing-final-grid .sparing-final-meta > span,
+#page-customer-sparring .sparing-final-grid .customer-sparring-meta > span{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(255,255,255,.10) !important;
+  border:1px solid rgba(147,197,253,.38) !important;
+  box-shadow:none !important;
+}
+#page-customer-sparring .sparing-final-grid .sparing-final-meta .ok,
+#page-customer-sparring .sparing-final-grid .customer-sparring-status{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(14,116,144,.45) !important;
+  border-color:rgba(103,232,249,.45) !important;
+}
+
+/* VS tetap biru, bukan hijau/ungu */
+#page-customer-sparring .sparing-final-vs{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:linear-gradient(135deg,#123d70,#0d315c) !important;
+  border:1px solid rgba(96,165,250,.30) !important;
+  box-shadow:0 7px 16px rgba(2,18,38,.28) !important;
+}
+
+/* Footer pertandingan */
+#page-customer-sparring .sparing-final-footer{
+  color:#dbeafe !important;
+  -webkit-text-fill-color:#dbeafe !important;
+  border-top-color:rgba(147,197,253,.18) !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.35) !important;
+}
+
+/* Tombol pilih tim */
+#page-customer-sparring .sparing-final-grid .customer-sparring-select,
+#page-customer-sparring .sparing-final-grid button[onclick*="pilihSparringCustomer"]{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:linear-gradient(135deg,#1556a3,#0d3b73) !important;
+  border:1px solid rgba(147,197,253,.42) !important;
+  box-shadow:0 7px 16px rgba(2,18,38,.25) !important;
+}
+
+@media(max-width:640px){
+  #page-customer-sparring .sparing-final-section{margin-bottom:18px !important;}
+  #page-customer-sparring .sparing-final-head{margin-bottom:9px !important;}
+  #page-customer-sparring .sparing-final-grid{gap:10px !important;}
+  #page-customer-sparring .sparing-final-grid .customer-sparring-card,
+  #page-customer-sparring .sparing-final-grid .sparing-final-matched{
+    border-radius:18px !important;
+    padding:13px !important;
+  }
+}
+</style>
+
+<!-- FINAL PATCH V145: SPARING — HAPUS TOTAL KACA PEMBUNGKUS + GRID 2 KOLOM DI DESKTOP -->
+<style id="final-sparing-v145-noglass-2col">
+/*
+   1) Menghapus total efek kaca/kotak pembungkus pada tiap kelompok
+      (TIM YANG MENCARI LAWAN & TIM YANG SUDAH DAPAT LAWAN) — ini yang
+      ditandai panah merah. Hanya section pembungkusnya yang dihapus;
+      kartu tim biru/navy di dalamnya tetap seperti sebelumnya.
+   2) Lebar kartu pada HP disamakan persis dengan lebar header (100%
+      dari container, tanpa margin/padding tambahan).
+   3) Di layar desktop, kartu-kartu ditata berjejer 2 kolom.
+   Ditempatkan paling akhir di dokumen agar menang dari semua patch
+   sebelumnya tanpa mengubah id/onclick/JS.
+*/
+
+/* 1) Hapus total kaca pembungkus section */
+#page-customer-sparring .sparing-final-section,
+#page-customer-sparring .sparing-final-section::before,
+#page-customer-sparring .sparing-final-section::after,
+#page-customer-sparring .sparing-two-section-root{
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+#page-customer-sparring .sparing-final-section{
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 0 22px !important;
+  overflow: visible !important;
+}
+#page-customer-sparring .sparing-final-head{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  width: 100% !important;
+  margin: 0 0 10px !important;
+  padding: 0 2px !important;
+}
+
+/* 2) Lebar kartu = lebar header, penuh mengikuti container */
+#page-customer-sparring #customer-sparring-list,
+#page-customer-sparring .sparing-final-grid{
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#page-customer-sparring .sparing-final-grid > *,
+#page-customer-sparring .customer-sparring-card,
+#page-customer-sparring .sparing-final-matched{
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+/* Default (HP): satu kartu satu baris penuh */
+#page-customer-sparring .sparing-final-grid{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* 3) Desktop / tablet lanskap: kartu berjejer 2 kolom */
+@media (min-width: 641px){
+  #page-customer-sparring .sparing-final-grid{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 16px !important;
+  }
+  #page-customer-sparring .sparing-final-grid > *{
+    width: 100% !important;
+  }
+  /* Kartu "sudah dapat lawan" (matchup) tetap penuh 1 baris karena
+     kontennya lebih lebar (2 tim + VS) — biarkan tetap 1 kolom penuh
+     agar tidak sempit; hapus baris ini kalau ingin ikut 2 kolom juga. */
+}
+</style>
+
+<!-- FINAL PATCH V146: SPARING — MENANGKAN SPESIFISITAS SELECTOR LAMA (#id #id > *) -->
+<style id="final-sparing-v146-specificity-fix">
+/*
+   PENYEBAB ASLI kaca masih muncul: rule lama
+   "#page-customer-sparring #customer-sparring-list > *" memakai DUA
+   ID sekaligus (specificity 2-0-0), lebih tinggi dari patch
+   sebelumnya yang cuma "#id .class" (1-1-0) — jadi walau ditaruh
+   di akhir dokumen, urutan tidak menang melawan specificity yang
+   lebih tinggi. Di sini kita samakan/lampaui specificity itu dengan
+   menambahkan class pada selector (2 ID + 1 class = 2-1-0) supaya
+   PASTI menang, di mana pun rule lama itu berada.
+*/
+#page-customer-sparring #customer-sparring-list > .sparing-final-section,
+#page-customer-sparring #customer-sparring-list > .sparing-two-section-root > .sparing-final-section{
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+#page-customer-sparring #customer-sparring-list > .sparing-final-section::before,
+#page-customer-sparring #customer-sparring-list > .sparing-final-section::after{
+  content: none !important;
+  display: none !important;
+}
+</style>
+
+<!-- ================================================================
+     FINAL PATCH V200: SPARING — KUNCI LEBAR KE HEADER/DOCK
+     + GARIS POTONG PERSIS SEPERTI MEMBER (SEMUA JENIS KARTU)
+     ------------------------------------------------------------------
+     Masalah yang diperbaiki di sini:
+     1) Lebar card ("TIM YANG MENCARI LAWAN" & "TIM YANG SUDAH DAPAT
+        LAWAN") masih lebih lebar dari header dan dock bar, walau
+        sudah beberapa kali dicoba diperbaiki oleh patch-patch di atas
+        (V133–V146). Alih-alih menambah aturan CSS baru yang bisa
+        kalah/menang secara tidak terduga melawan puluhan aturan lama,
+        di sini lebar SETIAP elemen (header, daftar, dan tiap kartu)
+        dikunci secara langsung lewat JavaScript ke lebar & posisi
+        dock bar yang sebenarnya (diukur real-time), lalu ditulis
+        sebagai inline style ber-priority "important" — ini otomatis
+        menang melawan SEMUA aturan !important dari stylesheet lama,
+        tanpa perlu menghapus satupun kode lama.
+     2) Sebelumnya mekanisme "potong pas garis" (clip-path) HANYA
+        berlaku untuk kartu "TIM YANG MENCARI LAWAN"
+        (.customer-sparring-card) — kartu "TIM YANG SUDAH DAPAT
+        LAWAN" (.sparing-final-matched) tidak pernah ikut dipotong.
+        Di sini kedua jenis kartu (+ kartu kosong .sparing-final-empty)
+        disamakan persis dengan logika Member: garis potong ATAS =
+        garis PALING ATAS header (dengan radius sudut ATAS header),
+        garis potong BAWAH = garis PALING BAWAH dock (dengan radius
+        sudut BAWAH dock).
+     Tidak mengubah id/class/onclick/JS booking yang sudah ada — hanya
+     menambahkan penguncian akhir yang berjalan setelah semuanya.
+     Hanya aktif di HP (≤640px); desktop tidak disentuh sama sekali.
+     ================================================================ -->
+<style id="sparing-final-lock-v200-style">
+@media (max-width:640px){
+  /* Pastikan tidak ada overflow ancestor yang memotong clip-path kartu. */
+  #page-customer-sparring,
+  #page-customer-sparring #customer-sparring-list,
+  #page-customer-sparring .sparing-final-section,
+  #page-customer-sparring .sparing-final-grid{
+    overflow:visible !important;
+  }
+}
+</style>
+<script id="sparing-final-lock-v200-script">
+(function(){
+  'use strict';
+  if (window.__sparingFinalLockV200) return;
+  window.__sparingFinalLockV200 = true;
+
+  var MOBILE_MAX = 640;
+  var raf = 0;
+
+  function px(n){ return n.toFixed(2) + 'px'; }
+
+  /* Kunci lebar & posisi horizontal elemen persis sama dengan targetRect
+     (diambil dari dock bar), apa pun aturan CSS lama yang menimpanya. */
+  function alignToRect(el, targetRect){
+    if(!el) return;
+    var cs = getComputedStyle(el);
+    el.style.setProperty('box-sizing','border-box','important');
+
+    if(cs.position === 'fixed' || cs.position === 'absolute'){
+      el.style.setProperty('left', px(targetRect.left), 'important');
+      el.style.setProperty('right','auto','important');
+      el.style.setProperty('width', px(targetRect.width), 'important');
+      el.style.setProperty('max-width', px(targetRect.width), 'important');
+    } else {
+      var rect = el.getBoundingClientRect();
+      var curMarginLeft = parseFloat(cs.marginLeft) || 0;
+      var deltaLeft = targetRect.left - rect.left;
+      el.style.setProperty('margin-left', px(curMarginLeft + deltaLeft), 'important');
+      el.style.setProperty('margin-right','0px','important');
+      el.style.setProperty('width', px(targetRect.width), 'important');
+      el.style.setProperty('max-width', px(targetRect.width), 'important');
+      el.style.setProperty('flex','0 0 auto','important');
+    }
+  }
+
+  function clearForced(el){
+    if(!el) return;
+    [
+      'box-sizing','left','right','margin-left','margin-right','width','max-width','flex',
+      'clip-path','-webkit-clip-path','visibility','pointer-events'
+    ].forEach(function(p){ el.style.removeProperty(p); });
+  }
+
+  function sync(){
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(function(){
+      var page   = document.getElementById('page-customer-sparring');
+      var nav    = document.getElementById('customer-bottom-nav');
+      if(!page) return;
+
+      var mobile = window.matchMedia('(max-width:'+MOBILE_MAX+'px)').matches;
+      var active = !page.classList.contains('hidden');
+      var header = page.querySelector('.customer-sparring-page-head');
+      var list   = document.getElementById('customer-sparring-list');
+      var cards  = page.querySelectorAll(
+        '.customer-sparring-card, .sparing-final-matched, .sparing-final-empty'
+      );
+
+      if(!mobile || !active || !nav || !header){
+        clearForced(header);
+        clearForced(list);
+        cards.forEach(clearForced);
+        return;
+      }
+
+      var navRect = nav.getBoundingClientRect();
+      if(navRect.width <= 0 || navRect.height <= 0) return;
+
+      /* 1) Lebar & posisi header dikunci persis sama dengan dock. */
+      alignToRect(header, navRect);
+      /* 2) Lebar & posisi daftar (pembungkus semua section) dikunci sama. */
+      alignToRect(list, navRect);
+      /* 3) Lebar & posisi SETIAP kartu (kedua jenis) dikunci sama. */
+      cards.forEach(function(c){ alignToRect(c, navRect); });
+
+      /* 4) Garis potong: ATAS = garis PALING ATAS header (radius atas
+            header), BAWAH = garis PALING BAWAH dock (radius bawah dock).
+            Persis logika Member. */
+      var headerRect  = header.getBoundingClientRect();
+      var headerStyle = getComputedStyle(header);
+      var headerTop   = headerRect.top;
+      var headerRadiusL = Math.max(0, parseFloat(headerStyle.borderTopLeftRadius)  || 0);
+      var headerRadiusR = Math.max(0, parseFloat(headerStyle.borderTopRightRadius) || 0);
+
+      var navBottom  = navRect.bottom;
+      var navStyle   = getComputedStyle(nav);
+      var dockRadius = Math.max(
+        parseFloat(navStyle.borderBottomLeftRadius)  || 0,
+        parseFloat(navStyle.borderBottomRightRadius) || 0
+      );
+
+      cards.forEach(function(card){
+        var r = card.getBoundingClientRect();
+        var h = r.height;
+        if(h <= 0) return;
+
+        var topClip    = Math.min(h, Math.max(0, headerTop - r.top));
+        var bottomClip = Math.min(h, Math.max(0, r.bottom - navBottom));
+
+        if(topClip >= h || bottomClip >= h){
+          /* Kartu sepenuhnya berada di belakang header atau di belakang dock. */
+          card.style.setProperty('clip-path','inset(100% 0 0 0)','important');
+          card.style.setProperty('-webkit-clip-path','inset(100% 0 0 0)','important');
+          card.style.setProperty('visibility','hidden','important');
+          card.style.setProperty('pointer-events','none','important');
+        } else if(topClip > 0 || bottomClip > 0){
+          var clipValue = 'inset('+
+            px(topClip)+' 0 '+px(bottomClip)+' 0 round '+
+            px(headerRadiusL)+' '+px(headerRadiusR)+' '+px(dockRadius)+' '+px(dockRadius)+
+          ')';
+          card.style.setProperty('clip-path', clipValue, 'important');
+          card.style.setProperty('-webkit-clip-path', clipValue, 'important');
+          card.style.setProperty('visibility','visible','important');
+          card.style.removeProperty('pointer-events');
+        } else {
+          card.style.removeProperty('clip-path');
+          card.style.removeProperty('-webkit-clip-path');
+          card.style.removeProperty('visibility');
+          card.style.removeProperty('pointer-events');
+        }
+      });
+    });
+  }
+
+  function install(){
+    window.addEventListener('scroll', sync, {passive:true});
+    window.addEventListener('resize', sync, {passive:true});
+    window.addEventListener('orientationchange', sync, {passive:true});
+
+    var oldShowPage = window.showPage;
+    if(typeof oldShowPage === 'function' && !oldShowPage.__sparingFinalLockV200){
+      var wrapped = function(){
+        var result = oldShowPage.apply(this, arguments);
+        requestAnimationFrame(sync);
+        setTimeout(sync,60);
+        setTimeout(sync,220);
+        setTimeout(sync,500);
+        return result;
+      };
+      wrapped.__sparingFinalLockV200 = true;
+      window.showPage = wrapped;
+    }
+
+    sync();
+    /* Beberapa gambar logo tim memuat belakangan dan bisa mengubah
+       tinggi kartu — sinkronkan ulang beberapa kali setelah load. */
+    setTimeout(sync,300);
+    setTimeout(sync,800);
+    setTimeout(sync,1500);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', install, {once:true});
+  } else {
+    install();
+  }
+})();
+</script>
+
+<!-- ================================================================
+     PATCH: SPARING — FRAME JUDUL EDGE-TO-EDGE + GRADASI KACA
+     ------------------------------------------------------------------
+     1) Judul tiap kelompok (TIM YANG MENCARI LAWAN / TIM YANG SUDAH
+        DAPAT LAWAN) dibuat rata tengah, dibungkus frame persegi
+        panjang yang ujung kiri-kanannya menyentuh ujung layar.
+     2) Warna frame judul: gradasi dari tengah (warna solid) memudar
+        transparan ke kiri & ke kanan. Kuning->oranye untuk "mencari
+        lawan", hijau muda->navy untuk "sudah dapat lawan".
+     3) Card tim ikut diberi tema warna yang sama (glass) supaya kedua
+        kelompok mudah dibedakan sekilas.
+     4) Frame judul & card memakai efek kaca (translucent + blur).
+     Selector sengaja memakai 2 ID + class supaya spesifisitasnya
+     menang melawan seluruh patch lama di atas, di mana pun rule ini
+     diletakkan.
+     ================================================================ -->
+<style id="sparing-theme-glass-edge-final">
+
+/* ---------- FRAME JUDUL: edge-to-edge, rata tengah, kaca ---------- */
+#page-customer-sparring #customer-sparring-list .sparing-final-head{
+  position:relative !important;
+  left:50% !important;
+  right:auto !important;
+  width:100vw !important;
+  max-width:100vw !important;
+  margin:0 0 14px !important;
+  margin-left:-50vw !important;
+  margin-right:0 !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:12px !important;
+  text-align:center !important;
+  padding:16px 22px !important;
+  border-radius:0 !important;
+  border:0 !important;
+  border-top:1px solid rgba(255,255,255,.35) !important;
+  border-bottom:1px solid rgba(255,255,255,.16) !important;
+  backdrop-filter:blur(16px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(16px) saturate(165%) !important;
+  box-shadow:0 10px 26px rgba(2,12,22,.20) !important;
+  overflow:visible !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-title-wrap{
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:left !important;
+  min-width:0 !important;
+}
+
+/* Kelompok 1 — TIM YANG MENCARI LAWAN: kuning -> oranye, transparan di kedua ujung */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-head{
+  background:linear-gradient(90deg,
+    rgba(253,224,71,0) 0%,
+    rgba(253,224,71,.16) 12%,
+    rgba(251,146,60,.55) 34%,
+    rgba(234,88,12,.78) 50%,
+    rgba(251,146,60,.55) 66%,
+    rgba(253,224,71,.16) 88%,
+    rgba(253,224,71,0) 100%) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-icon{
+  background:linear-gradient(135deg,#facc15,#ea580c) !important;
+  box-shadow:0 8px 18px rgba(234,88,12,.45) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-count{
+  background:rgba(154,52,18,.38) !important;
+  border-color:rgba(253,186,116,.65) !important;
+}
+
+/* Kelompok 2 — TIM YANG SUDAH DAPAT LAWAN: hijau muda -> navy, transparan di kedua ujung */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-head{
+  background:linear-gradient(90deg,
+    rgba(110,231,183,0) 0%,
+    rgba(110,231,183,.16) 12%,
+    rgba(16,60,110,.55) 34%,
+    rgba(8,26,52,.82) 50%,
+    rgba(16,60,110,.55) 66%,
+    rgba(110,231,183,.16) 88%,
+    rgba(110,231,183,0) 100%) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-icon{
+  background:linear-gradient(135deg,#6ee7b7,#0b2a50) !important;
+  box-shadow:0 8px 18px rgba(11,42,80,.45) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-count{
+  background:rgba(11,42,80,.42) !important;
+  border-color:rgba(110,231,183,.65) !important;
+}
+
+/* Teks judul/subjudul tetap putih & terbaca di atas frame kaca berwarna */
+#page-customer-sparring #customer-sparring-list .sparing-final-title{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  text-shadow:0 1px 4px rgba(0,0,0,.45) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-subtitle{
+  color:rgba(255,255,255,.86) !important;
+  -webkit-text-fill-color:rgba(255,255,255,.86) !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.35) !important;
+}
+
+/* ---------- CARD: TIM YANG MENCARI LAWAN — tema kuning->oranye, kaca ---------- */
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card{
+  background:linear-gradient(150deg,rgba(154,52,18,.62) 0%,rgba(194,65,12,.52) 45%,rgba(120,53,15,.58) 100%) !important;
+  border:1px solid rgba(253,186,116,.55) !important;
+  backdrop-filter:blur(18px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(165%) !important;
+  box-shadow:0 14px 30px rgba(120,53,15,.30), inset 0 1px 0 rgba(255,255,255,.20) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card,
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card *{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-meta > span{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(255,255,255,.14) !important;
+  border:1px solid rgba(253,186,116,.45) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-meta .customer-sparring-status{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(234,88,12,.42) !important;
+  border-color:rgba(253,224,71,.55) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-vs{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-vs span{
+  color:rgba(255,255,255,.75) !important;
+  -webkit-text-fill-color:rgba(255,255,255,.75) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-select,
+#page-customer-sparring #customer-sparring-list .sparing-final-grid button[onclick*="pilihSparringCustomer"]{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:linear-gradient(135deg,#f59e0b,#ea580c) !important;
+  border:1px solid rgba(253,224,71,.55) !important;
+  box-shadow:0 8px 18px rgba(154,52,18,.35) !important;
+}
+
+/* ---------- CARD: TIM YANG SUDAH DAPAT LAWAN — tema hijau muda->navy, kaca ---------- */
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched{
+  background:linear-gradient(150deg,rgba(6,78,59,.55) 0%,rgba(9,40,80,.58) 50%,rgba(6,20,42,.68) 100%) !important;
+  border:1px solid rgba(110,231,183,.55) !important;
+  backdrop-filter:blur(18px) saturate(165%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(165%) !important;
+  box-shadow:0 16px 34px rgba(4,30,60,.32), inset 0 1px 0 rgba(255,255,255,.20) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched .sparing-final-meta span{
+  background:rgba(255,255,255,.14) !important;
+  border:1px solid rgba(110,231,183,.45) !important;
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched .sparing-final-meta .ok{
+  background:rgba(16,185,129,.38) !important;
+  border-color:rgba(110,231,183,.65) !important;
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched .sparing-final-match-team .sparing-final-name{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  text-shadow:0 1px 3px rgba(0,0,0,.4) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched .sparing-final-vs{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  background:rgba(255,255,255,.14) !important;
+  border:1px solid rgba(110,231,183,.4) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched .sparing-final-footer{
+  color:rgba(255,255,255,.9) !important;
+  -webkit-text-fill-color:rgba(255,255,255,.9) !important;
+  border-top-color:rgba(110,231,183,.3) !important;
+}
+
+</style>
+
+<!-- ================================================================
+     FINAL PATCH V147: SPARING — HAPUS KACA BOCOR (EDGE-TO-EDGE) PADA HEADER
+     + SAMAKAN WARNA HEADER DENGAN WARNA CARD DI BAWAHNYA
+     ------------------------------------------------------------------
+     1) Sebelumnya header dibuat "edge-to-edge" (position:relative;
+        left:50%; width:100vw; margin-left:-50vw), sehingga kacanya
+        menyembul/bocor keluar dari lebar card — inilah "kaca" yang
+        ditandai panah merah. Di sini lebar & posisi header dikembalikan
+        mengikuti lebar card (100% container), tidak bocor ke luar lagi.
+     2) Warna kaca header (kedua kelompok) disamakan persis dengan warna
+        kaca card di bawahnya, supaya menyatu dan tidak ada garis/warna
+        kaca tambahan yang mengganggu.
+     Ditempatkan paling akhir agar menang dari seluruh patch di atas
+     tanpa mengubah id/class/onclick/JS yang sudah ada.
+     ================================================================ -->
+<style id="sparing-final-v147-head-noleak-match-card">
+#page-customer-sparring #customer-sparring-list .sparing-final-head{
+  position:static !important;
+  left:auto !important;
+  right:auto !important;
+  width:100% !important;
+  max-width:100% !important;
+  margin:0 0 14px !important;
+  border-radius:18px !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+}
+
+/* Kelompok 1 — TIM YANG MENCARI LAWAN: samakan dengan warna kaca card oranye */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-head{
+  background:linear-gradient(150deg,rgba(154,52,18,.62) 0%,rgba(194,65,12,.52) 45%,rgba(120,53,15,.58) 100%) !important;
+}
+
+/* Kelompok 2 — TIM YANG SUDAH DAPAT LAWAN: samakan dengan warna kaca card hijau->navy */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-head{
+  background:linear-gradient(150deg,rgba(6,78,59,.55) 0%,rgba(9,40,80,.58) 50%,rgba(6,20,42,.68) 100%) !important;
+}
+</style>
+
+<!-- ================================================================
+     FINAL PATCH V148: SPARING — HAPUS TOTAL KACA PEMBUNGKUS BESAR
+     (SECTION WRAPPER) YANG MEMBUNGKUS HEADER + CARD JADI SATU BLOK
+     ------------------------------------------------------------------
+     Ini kaca besar yang dimaksud: elemen <section class="sparing-final-
+     section"> (wrapper yang berisi header .sparing-final-head DAN grid
+     kartu .sparing-final-grid) masih mendapat background kaca putih
+     transparan + blur + border + shadow dari rule lama
+     "sparing-two-section-final-v2" (background:linear-gradient(180deg,
+     rgba(255,255,255,.13),rgba(255,255,255,.06)) + backdrop-filter:
+     blur(18px) + border 1px + box-shadow), sehingga terlihat seolah
+     ada satu kotak kaca besar yang membungkus header dan card
+     sekaligus — termasuk celah/gap kosong di antara keduanya.
+     Di sini SEMUA lapisan visual pada wrapper tsb (background, border,
+     shadow, blur, radius, padding) dan pseudo-elemennya (::before/
+     ::after garis warna di atas) dihapus total, dengan selector
+     berspesifisitas maksimum (2 ID + class, ditaruh paling akhir)
+     supaya pasti menang melawan rule manapun di atasnya.
+     Header (.sparing-final-head) dan card tetap seperti sebelumnya —
+     hanya wrapper besarnya yang dibuat polos/tidak terlihat.
+     ================================================================ -->
+<style id="sparing-final-v148-kill-big-wrap-glass">
+#page-customer-sparring #customer-sparring-list .sparing-final-section,
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root .sparing-final-section{
+  background:transparent !important;
+  background-image:none !important;
+  background-color:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  border-radius:0 !important;
+  padding:0 !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-section::before,
+#page-customer-sparring #customer-sparring-list .sparing-final-section::after,
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root .sparing-final-section::before,
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root .sparing-final-section::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  box-shadow:none !important;
+}
+</style>
+
+<!-- ================================================================
+     FINAL PATCH V149: SPARING — WARNA HEADER DIPASTIKAN 100% SAMA
+     DENGAN WARNA CARD DI BAWAHNYA (KEDUA KELOMPOK) + HAPUS SUB JUDUL
+     ------------------------------------------------------------------
+     1) Judul "TIM YANG MENCARI LAWAN" dipertahankan, tapi warna kaca
+        header dipaksa memakai gradasi PERSIS sama dengan warna kaca
+        card tim di bawahnya (kuning->oranye/gelap sesuai tema card).
+     2) Judul "TIM YANG SUDAH DAPAT LAWAN" dipertahankan, warna kaca
+        header dipaksa sama dengan warna kaca card matched di bawahnya
+        (hijau muda->navy).
+     3) Teks sub judul ("Cari tim yang siap diajak sparing." dan
+        "Pertandingan yang sudah menemukan lawan.") disembunyikan
+        karena membuat header terlihat terlalu penuh. Teks judul (h3)
+        tidak diubah/dihapus.
+     Ditempatkan paling akhir supaya menang mutlak dari seluruh patch
+     warna header sebelumnya, tanpa mengubah HTML/JS yang sudah ada.
+     ================================================================ -->
+<style id="sparing-final-v149-head-match-card-nosub">
+/* Kelompok 1 — TIM YANG MENCARI LAWAN: header = persis warna card (kuning->oranye) */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-head{
+  background:linear-gradient(150deg,rgba(154,52,18,.62) 0%,rgba(194,65,12,.52) 45%,rgba(120,53,15,.58) 100%) !important;
+  border-color:rgba(253,186,116,.55) !important;
+}
+/* Kelompok 2 — TIM YANG SUDAH DAPAT LAWAN: header = persis warna card (hijau muda->navy) */
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(2) .sparing-final-head{
+  background:linear-gradient(150deg,rgba(6,78,59,.55) 0%,rgba(9,40,80,.58) 50%,rgba(6,20,42,.68) 100%) !important;
+  border-color:rgba(110,231,183,.55) !important;
+}
+/* Sembunyikan sub judul di kedua header — judul (h3) tetap tampil */
+#page-customer-sparring #customer-sparring-list .sparing-final-subtitle{
+  display:none !important;
 }
 </style>
