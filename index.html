@@ -24117,19 +24117,6 @@ body:has(#page-customer-member:not(.hidden)) main {
     animation:mfPopIn .22s cubic-bezier(.2,.8,.2,1);
 }
 
-#mf-close{
-    align-self:flex-end;
-    width:38px; height:38px; flex:0 0 auto;
-    display:grid; place-items:center;
-    border:1px solid rgba(255,255,255,.35);
-    border-radius:12px;
-    background:rgba(255,255,255,.14);
-    color:#fff; font-size:1.15rem; font-weight:900; line-height:1;
-    cursor:pointer;
-    backdrop-filter:blur(6px);
-}
-#mf-close:hover{ background:rgba(255,255,255,.24); }
-
 /* ---------- POSTER ---------- */
 #mf-poster{
     position:relative;
@@ -24327,8 +24314,8 @@ body:has(#page-customer-member:not(.hidden)) main {
     padding:10px 14px;
     border:1px solid rgba(74,222,128,.58);
     border-radius:14px;
-    background:linear-gradient(135deg,rgba(34,197,94,.16),rgba(16,185,129,.08));
-    box-shadow:0 6px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08);
+    background:rgba(30,197,110,.12);
+    box-shadow:0 6px 16px rgba(0,0,0,.18);
     text-align:center;
 }
 .mf-team-contact-label{
@@ -24351,7 +24338,7 @@ body:has(#page-customer-member:not(.hidden)) main {
 #mf-poster.mf-pending .mf-team-contact.is-empty{ display:block; opacity:.92; }
 #mf-poster.mf-pending .mf-title{ font-size:clamp(2rem,9.8vw,2.7rem); line-height:.95; white-space:pre-line; margin-bottom:6%; }
 #mf-poster.mf-pending .mf-status{ display:block; }
-#mf-poster.mf-pending .mf-team-logo .mf-question{ height:86%; aspect-ratio:1/1; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#f6c453,#c9861a); border:4px solid rgba(255,255,255,.72); color:#3a2405; font-size:clamp(2.8rem,12vw,4rem); font-weight:950; line-height:1; text-shadow:0 2px 0 rgba(255,255,255,.3); filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+#mf-poster.mf-pending .mf-team-logo .mf-question{ height:86%; aspect-ratio:1/1; border-radius:50%; display:flex; align-items:center; justify-content:center; text-align:center; background:linear-gradient(135deg,#f6c453,#c9861a); border:4px solid rgba(255,255,255,.72); color:#3a2405; font-size:clamp(2.8rem,12vw,4rem); font-weight:950; line-height:1; text-shadow:0 2px 0 rgba(255,255,255,.3); filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
 .mf-footer{
     position:relative; z-index:1;
     width:100%;
@@ -24371,34 +24358,6 @@ body:has(#page-customer-member:not(.hidden)) main {
 .mf-footer-icon svg{ width:100%; height:100%; display:block; opacity:.9; }
 .mf-footer-sep{ opacity:.55; }
 
-/* ---------- Tombol aksi di luar poster ---------- */
-#mf-actions{
-    display:flex; gap:10px; width:100%;
-}
-#mf-download,
-#mf-share{
-    flex:1 1 0;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    min-height:48px;
-    border:0; border-radius:14px;
-    font-size:.82rem; font-weight:950;
-    letter-spacing:.02em;
-    cursor:pointer;
-    box-shadow:0 10px 22px rgba(0,0,0,.28);
-    transition:transform .15s ease, filter .15s ease;
-}
-#mf-download{
-    background:linear-gradient(135deg,#f6c453,#c9861a);
-    color:#3a2405;
-}
-#mf-share{
-    background:rgba(255,255,255,.14);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.35);
-    backdrop-filter:blur(6px);
-}
-#mf-download:hover, #mf-share:hover{ transform:translateY(-1px); filter:brightness(1.05); }
-#mf-download:disabled{ opacity:.65; cursor:progress; transform:none; }
 
 @media (max-width:380px){
     #mf-shell{ width:96vw; }
@@ -24406,7 +24365,6 @@ body:has(#page-customer-member:not(.hidden)) main {
 </style>
 <div id="mf-overlay" role="dialog" aria-modal="true" aria-label="Poster Match Founded">
   <div id="mf-shell">
-    <button type="button" id="mf-close" aria-label="Tutup">✕</button>
     <div id="mf-poster">
       <div class="mf-corner-dots mf-corner-dots--tl" aria-hidden="true"></div>
       <div class="mf-corner-dots mf-corner-dots--br" aria-hidden="true"></div>      <div class="mf-badge-logo"><img src="logo.png" alt="Logo Klub"/></div>
@@ -24460,10 +24418,6 @@ body:has(#page-customer-member:not(.hidden)) main {
           <span id="mf-social">@sandagaminisoccer2</span>
         </div>
       </div>
-    </div>
-    <div id="mf-actions">
-      <button type="button" id="mf-download">⬇️ Unduh Poster</button>
-      <button type="button" id="mf-share">🔗 Bagikan</button>
     </div>
   </div>
 </div>
@@ -24597,103 +24551,23 @@ body:has(#page-customer-member:not(.hidden)) main {
 
   document.addEventListener('DOMContentLoaded', function(){
     var overlay = document.getElementById('mf-overlay');
-    var closeBtn = document.getElementById('mf-close');
-    if(closeBtn) closeBtn.addEventListener('click', closePoster);
     if(overlay){
       overlay.addEventListener('click', function(e){
-        if(e.target === overlay) closePoster();
+        var poster = document.getElementById('mf-poster');
+        // Tutup otomatis kalau klik terjadi di luar area poster (overlay
+        // atau ruang kosong di sekitarnya), dan hentikan event supaya tidak
+        // ikut memicu tombol/elemen lain di halaman di baliknya.
+        if(poster && !poster.contains(e.target)){
+          e.preventDefault();
+          e.stopPropagation();
+          closePoster();
+        }
       });
     }
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape') closePoster();
     });
 
-    var html2canvasReady = null;
-    function loadHtml2Canvas(){
-      if(window.html2canvas) return Promise.resolve();
-      if(html2canvasReady) return html2canvasReady;
-      html2canvasReady = new Promise(function(resolve, reject){
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        s.onload = function(){ resolve(); };
-        s.onerror = function(){ reject(new Error('Gagal memuat html2canvas')); };
-        document.head.appendChild(s);
-      });
-      return html2canvasReady;
-    }
-
-    function capturePoster(){
-      var poster = document.getElementById('mf-poster');
-      return loadHtml2Canvas().then(function(){
-        return window.html2canvas(poster, {
-          backgroundColor: null,
-          useCORS: true,
-          scale: Math.min(3, (window.devicePixelRatio || 1) * 2)
-        });
-      });
-    }
-
-    var downloadBtn = document.getElementById('mf-download');
-    if(downloadBtn){
-      downloadBtn.addEventListener('click', function(){
-        downloadBtn.disabled = true;
-        var originalText = downloadBtn.textContent;
-        downloadBtn.textContent = '⏳ Memproses...';
-        capturePoster().then(function(canvas){
-          var link = document.createElement('a');
-          var nameA = (document.getElementById('mf-name-a').textContent || 'tim-a').trim();
-          var nameB = (document.getElementById('mf-name-b').textContent || 'tim-b').trim();
-          var safe = function(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); };
-          var isPending = document.getElementById('mf-poster').classList.contains('mf-pending');
-           link.download = (isPending ? 'cari-lawan-' + safe(nameA) : 'match-founded-' + safe(nameA) + '-vs-' + safe(nameB)) + '.png';
-          link.href = canvas.toDataURL('image/png');
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-        }).catch(function(err){
-          alert('Gagal membuat gambar poster. Silakan coba lagi.');
-          console.error(err);
-        }).finally(function(){
-          downloadBtn.disabled = false;
-          downloadBtn.textContent = originalText;
-        });
-      });
-    }
-
-    var shareBtn = document.getElementById('mf-share');
-    if(shareBtn){
-      shareBtn.addEventListener('click', function(){
-        shareBtn.disabled = true;
-        var originalText = shareBtn.textContent;
-        shareBtn.textContent = '⏳ Memproses...';
-        capturePoster().then(function(canvas){
-          canvas.toBlob(function(blob){
-            if(!blob){ shareBtn.disabled = false; shareBtn.textContent = originalText; return; }
-            var nameA = (document.getElementById('mf-name-a').textContent || 'tim-a').trim();
-            var nameB = (document.getElementById('mf-name-b').textContent || 'tim-b').trim();
-            var isPending = document.getElementById('mf-poster').classList.contains('mf-pending');
-            var file = new File([blob], (isPending ? 'cari-lawan-' + nameA : 'match-founded-' + nameA + '-vs-' + nameB) + '.png', { type: 'image/png' });
-            if(navigator.canShare && navigator.canShare({ files: [file] })){
-              navigator.share({ files: [file], title: isPending ? 'Cari Lawan Sparing' : 'Match Founded', text: isPending ? nameA + ' sedang mencari lawan sparing' : nameA + ' VS ' + nameB }).catch(function(){});
-            } else {
-              var link = document.createElement('a');
-              link.download = file.name;
-              link.href = URL.createObjectURL(blob);
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-            }
-            shareBtn.disabled = false;
-            shareBtn.textContent = originalText;
-          }, 'image/png');
-        }).catch(function(err){
-          alert('Gagal membuat gambar poster. Silakan coba lagi.');
-          console.error(err);
-          shareBtn.disabled = false;
-          shareBtn.textContent = originalText;
-        });
-      });
-    }
   });
 })();
 </script>
