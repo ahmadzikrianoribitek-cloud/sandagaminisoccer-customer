@@ -7850,7 +7850,7 @@ document.addEventListener('DOMContentLoaded', () => {
           function logoHtml(name,itemLogo){const logo=getLogo(name,itemLogo), safe=esc(name||'Tim'); if(logo)return `<div class="sparing-final-logo"><img src="${esc(logo)}" alt="Logo ${safe}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="sparing-final-logo-fallback" style="display:none">${initials(name)}</span></div>`;return `<div class="sparing-final-logo"><span class="sparing-final-logo-fallback">${initials(name)}</span></div>`;}
           function active(item,now,today){const d=String(item?.tanggal||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d<today)return false;if(d===today){const m=String(item?.jam||'').match(/(\d{1,2})(?::(\d{2}))?/);if(m){const h=+m[1],mi=+(m[2]||0);if(h>=0&&h<=23&&mi>=0&&mi<=59&&now>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0,0))return false;}}return true;}
           function meta(item,ok){const d=item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-';const j=esc(item?.jam||'-');return `<div class="${ok?'sparing-final-meta':'customer-sparring-meta'}"><span>📅 ${d}</span><span>⏰ ${j}</span><span class="${ok?'ok':'customer-sparring-status'}">${ok?'✓ SUDAH DAPAT LAWAN':'⌛ MENCARI LAWAN'}</span></div>`;}
-          function pendingCard(key,item){const a=String(item?.timA||'').trim();const phone=String(item?.noHp||'').trim()||((String(item?.catatan||'').match(/(?:No\.?\s*HP|Nomor HP|WhatsApp)\s*:\s*([+0-9\s-]+)/i)||[,''])[1]||'').trim();return `<div class="customer-sparring-card">${meta(item,false)}<div class="sparing-final-team">${logoHtml(a,item?.logoA)}<div><div class="sparing-final-label">Tim yang mencari lawan</div><div class="sparing-final-name">${esc(a)}</div></div></div><div class="customer-sparring-vs">VS <span>Belum ada lawan</span></div><div class="customer-sparring-actions"><button type="button" class="customer-sparring-select" data-sparring-key="${esc(key)}" data-sparring-phone="${esc(phone)}">⚽ Pilih Tim Ini</button></div></div>`;}
+          function pendingCard(key,item){const a=String(item?.timA||'').trim();const rawCat=String(item?.catatan||'');const phone=String(item?.noHp||item?.noHP||item?.noHpA||item?.noHPA||item?.noWA||item?.noWa||item?.nomorHp||item?.nomorHP||item?.nomorWa||item?.nomorWA||item?.whatsapp||item?.wa||item?.phone||item?.hp||item?.kontak||item?.kontakTim||'').trim()||((rawCat.match(/(?:no\.?\s*(?:hp|wa)?|nomor(?:\s+(?:hp|wa))?|whatsapp|wa|hp)\s*[:\-]?\s*(\+?62|0)\s*[0-9][0-9\s-]{6,}/i)||['',''])[0].replace(/^[^0-9+]*(?=[+0-9])/,'').trim());const logoAUrl=getLogo(a,item?.logoA);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));return `<div class="customer-sparring-card match-pending-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Cari Lawan" data-mf-status="pending" data-mf-key="${esc(key)}" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="TIMMU?" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="" data-mf-phone="${esc(phone)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}">${meta(item,false)}<div class="sparing-final-team">${logoHtml(a,item?.logoA)}<div><div class="sparing-final-label">Tim yang mencari lawan</div><div class="sparing-final-name">${esc(a)}</div></div></div><div class="customer-sparring-vs">VS <span>Belum ada lawan</span></div><div class="customer-sparring-actions"><button type="button" class="customer-sparring-select" data-sparring-key="${esc(key)}" data-sparring-phone="${esc(phone)}">⚽ Pilih Tim Ini</button></div><div class="match-pending-hint">⌛ Ketuk untuk lihat poster Cari Lawan</div></div>`;}
           function matchedCard(item){const a=String(item?.timA||'').trim(),b=String(item?.timB||item?.teamB||item?.lawan||'').trim();const logoAUrl=getLogo(a,item?.logoA),logoBUrl=getLogo(b,item?.logoB);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));return `<div class="sparing-final-matched match-founded-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Match Founded" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="${esc(b||'Lawan')}" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="${esc(logoBUrl)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}"><div class="sparing-final-meta"><span>📅 ${item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-'}</span><span>⏰ ${esc(item?.jam||'-')}</span><span class="ok">✓ SUDAH DAPAT LAWAN</span></div><div class="sparing-final-matchup"><div class="sparing-final-match-team">${logoHtml(a,item?.logoA)}<div class="sparing-final-name">${esc(a||'Tim A')}</div></div><div class="sparing-final-vs">VS</div><div class="sparing-final-match-team">${logoHtml(b,item?.logoB)}<div class="sparing-final-name">${esc(b||'Lawan')}</div></div></div><div class="sparing-final-footer">🤝 Pertandingan sudah mendapatkan lawan — <span class="match-founded-hint">Ketuk untuk lihat &amp; unduh poster</span></div></div>`;}
           function section(icon,title,sub,count,html){return `<section class="sparing-final-section"><div class="sparing-final-head"><div class="sparing-final-title-wrap"><div class="sparing-final-icon">${icon}</div><div><h3 class="sparing-final-title">${title}</h3><p class="sparing-final-subtitle">${sub}</p></div></div><div class="sparing-final-count">${count}</div></div><div class="sparing-final-grid">${html}</div></section>`;}
           window.renderCustomerSparring = function(){
@@ -7875,6 +7875,47 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML=section('🔎','TIM YANG MENCARI LAWAN','Cari tim yang siap diajak sparing.',pending.length,phtml)+section('🤝','TIM YANG SUDAH DAPAT LAWAN','Pertandingan yang sudah menemukan lawan.',matched.length,mhtml);
 
             if(!list.dataset.sparringClickBound){
+                const resolvePendingPhone = (el) => {
+                    if(!el || !el.classList.contains('match-pending-trigger')) return '';
+                    let phone = String(el.dataset.mfPhone || '').trim();
+                    const key = el.dataset.mfKey || '';
+                    const item = (globalCache.sparring && globalCache.sparring[key]) || {};
+                    // 1. Ambil dari record sparring Firebase (mendukung semua variasi field lama/baru)
+                    if(!phone) phone = String(
+                        item.noHp || item.noHP || item.noHpA || item.noHPA || item.noWa || item.noWA ||
+                        item.nomorHp || item.nomorHP || item.nomorWa || item.nomorWA ||
+                        item.whatsapp || item.wa || item.phone || item.hp || item.kontak || item.kontakTim || ''
+                    ).trim();
+                    // 2. Jika record sparring lama tidak menyimpan nomor, cari booking asal berdasarkan nama tim + tanggal/jam.
+                    if(!phone){
+                        const team = String(item.timA || el.dataset.mfTeamA || '').trim().toLowerCase();
+                        const tgl = String(item.tanggal || el.dataset.mfTanggal || '').trim();
+                        const jam = String(item.jam || el.dataset.mfJam || '').trim();
+                        const candidates = Object.values((globalCache && globalCache.booking) || {});
+                        const booking = candidates.find(function(b){
+                            const nama = String(b?.nama || b?.timA || b?.namaTim || b?.teamName || '').trim().toLowerCase();
+                            const btgl = String(b?.tgl || b?.tanggal || '').split('T')[0];
+                            const bjam = String(b?.tgl || '').split('T')[1] || String(b?.jam || '');
+                            return nama && team && nama === team && (!tgl || btgl === tgl) && (!jam || !bjam || String(bjam).slice(0,5) === String(jam).slice(0,5));
+                        });
+                        if(booking){
+                            phone = String(booking.noHp || booking.noHP || booking.noWa || booking.noWA || booking.nomorHp || booking.nomorWA || booking.whatsapp || booking.wa || booking.phone || booking.hp || '').trim();
+                        }
+                    }
+                    // 3. Fallback dari catatan
+                    if(!phone){
+                        const cat = String(item.catatan || '');
+                        const m = cat.match(/(?:no\.?\s*(?:hp|wa)?|nomor(?:\s+(?:hp|wa))?|whatsapp|wa|hp)\s*[:\-]?\s*((?:\+?62|0)\s*[0-9][0-9\s-]{6,})/i);
+                        if(m) phone = String(m[1] || '').trim();
+                    }
+                    // 4. Fallback terakhir dari tombol kartu
+                    if(!phone){
+                        const phoneBtn = el.querySelector('[data-sparring-phone]');
+                        phone = String(phoneBtn?.dataset.sparringPhone || '').trim();
+                    }
+                    el.dataset.mfPhone = phone;
+                    return phone;
+                };
                 list.addEventListener('click', (event) => {
                     const button = event.target.closest('.customer-sparring-select');
                     if(button){
@@ -7884,17 +7925,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.pilihSparringCustomer(key, phone);
                         return;
                     }
-                    const matchedEl = event.target.closest('.match-founded-trigger');
+                    const matchedEl = event.target.closest('.match-founded-trigger, .match-pending-trigger');
                     if(matchedEl && typeof window.openMatchFoundedPoster === 'function'){
                         event.preventDefault();
+                        if(matchedEl.classList.contains('match-pending-trigger')){
+                            resolvePendingPhone(matchedEl);
+                        }
                         window.openMatchFoundedPoster(matchedEl.dataset);
                     }
                 });
                 list.addEventListener('keydown', (event) => {
                     if(event.key !== 'Enter' && event.key !== ' ') return;
-                    const matchedEl = event.target.closest('.match-founded-trigger');
+                    const matchedEl = event.target.closest('.match-founded-trigger, .match-pending-trigger');
                     if(matchedEl && typeof window.openMatchFoundedPoster === 'function'){
                         event.preventDefault();
+                        if(matchedEl.classList.contains('match-pending-trigger')){
+                            resolvePendingPhone(matchedEl);
+                        }
                         window.openMatchFoundedPoster(matchedEl.dataset);
                     }
                 });
@@ -24038,6 +24085,10 @@ body:has(#page-customer-member:not(.hidden)) main {
 .match-founded-trigger{ cursor:pointer !important; }
 .match-founded-trigger:hover{ filter:brightness(1.03); }
 .match-founded-trigger:focus-visible{ outline:2px solid #fbbf24 !important; outline-offset:3px; }
+.match-pending-trigger{ cursor:pointer !important; }
+.match-pending-trigger:hover{ filter:brightness(1.03); }
+.match-pending-trigger:focus-visible{ outline:2px solid #fbbf24 !important; outline-offset:3px; }
+.match-pending-hint{ margin-top:8px; padding-top:7px; border-top:1px dashed rgba(255,255,255,.28); color:rgba(255,255,255,.9); font-size:.65rem; font-weight:900; text-align:center; letter-spacing:.01em; }
 .match-founded-hint{
     display:inline-block;
     margin-left:.35rem;
@@ -24267,6 +24318,40 @@ body:has(#page-customer-member:not(.hidden)) main {
 }
 .mf-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,.28); }
 
+.mf-status{ position:relative; z-index:1; display:none; margin:1% 0 2%; padding:7px 14px; border:1px solid rgba(251,191,36,.55); border-radius:999px; background:rgba(251,191,36,.14); color:#ffe08a; font-size:clamp(.62rem,2.9vw,.76rem); font-weight:950; letter-spacing:.05em; text-transform:uppercase; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.16); }
+.mf-team-contact{
+    position:relative; z-index:1;
+    display:none;
+    width:100%;
+    margin:0 0 4%;
+    padding:10px 14px;
+    border:1px solid rgba(74,222,128,.58);
+    border-radius:14px;
+    background:linear-gradient(135deg,rgba(34,197,94,.16),rgba(16,185,129,.08));
+    box-shadow:0 6px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08);
+    text-align:center;
+}
+.mf-team-contact-label{
+    display:block;
+    margin-bottom:3px;
+    color:rgba(255,255,255,.72);
+    font-size:clamp(.5rem,2.4vw,.62rem);
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.mf-team-contact-number{
+    display:block;
+    color:#fff;
+    font-size:clamp(.78rem,3.8vw,1rem);
+    font-weight:950;
+    letter-spacing:.035em;
+}
+#mf-poster.mf-pending .mf-team-contact{ display:block; }
+#mf-poster.mf-pending .mf-team-contact.is-empty{ display:block; opacity:.92; }
+#mf-poster.mf-pending .mf-title{ font-size:clamp(2rem,9.8vw,2.7rem); line-height:.95; white-space:pre-line; margin-bottom:6%; }
+#mf-poster.mf-pending .mf-status{ display:block; }
+#mf-poster.mf-pending .mf-team-logo .mf-question{ height:86%; aspect-ratio:1/1; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#f6c453,#c9861a); border:4px solid rgba(255,255,255,.72); color:#3a2405; font-size:clamp(2.8rem,12vw,4rem); font-weight:950; line-height:1; text-shadow:0 2px 0 rgba(255,255,255,.3); filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
 .mf-footer{
     position:relative; z-index:1;
     width:100%;
@@ -24357,6 +24442,11 @@ body:has(#page-customer-member:not(.hidden)) main {
         </div>
        </div>
       </div>
+      <div class="mf-status" id="mf-status" aria-live="polite">⌛ MENCARI LAWAN</div>
+      <div class="mf-team-contact" id="mf-team-contact" aria-live="polite">
+        <span class="mf-team-contact-label">HUBUNGI TIM VIA WHATSAPP</span>
+        <span class="mf-team-contact-number" id="mf-team-phone">-</span>
+      </div>
       <div class="mf-footer">
         <div class="mf-footer-row">
           <span class="mf-footer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.6"></circle></svg></span>
@@ -24425,16 +24515,75 @@ body:has(#page-customer-member:not(.hidden)) main {
   window.openMatchFoundedPoster = function(data){
     data = data || {};
     var overlay = document.getElementById('mf-overlay');
-    if(!overlay) return;
-
+    var poster = document.getElementById('mf-poster');
+    if(!overlay || !poster) return;
+    var isPending = String(data.mfStatus || '').toLowerCase() === 'pending';
+    poster.classList.toggle('mf-pending', isPending);
     fillTeam(document.getElementById('mf-logo-a'), document.getElementById('mf-name-a'), data.mfTeamA, data.mfLogoA);
-    fillTeam(document.getElementById('mf-logo-b'), document.getElementById('mf-name-b'), data.mfTeamB, data.mfLogoB);
+    var logoB = document.getElementById('mf-logo-b');
+    var nameB = document.getElementById('mf-name-b');
+    if(isPending){ nameB.textContent = 'TIMMU?'; logoB.innerHTML = '<div class="mf-question">?</div>'; }
+    else { fillTeam(logoB, nameB, data.mfTeamB, data.mfLogoB); }
+    var title = document.querySelector('#mf-poster .mf-title');
+    var eyebrow = document.querySelector('#mf-poster .mf-eyebrow');
+    var status = document.getElementById('mf-status');
+    if(title) title.textContent = isPending ? 'CARI LAWAN\nSPARING' : 'FOUNDED';
+    if(eyebrow) eyebrow.textContent = isPending ? 'SANDAGA MINISOCCER 2' : 'M A T C H';
+    if(status) status.textContent = isPending ? '⌛ MENCARI LAWAN' : '';
+    /* Nomor WA TIM yang mencari lawan — ambil langsung dari dataset kartu sparring */
+    var teamContact = document.getElementById('mf-team-contact');
+    var teamPhone = document.getElementById('mf-team-phone');
+    var posterPhone = document.getElementById('mf-phone');
+    var rawPhone = String(
+      data.mfPhone || data.mfWhatsapp || data.sparringPhone ||
+      data.noHp || data.noHP || data.noHpA || data.noHPA || data.noWa || data.noWA ||
+      data.nomorHp || data.nomorHP || data.nomorWa || data.nomorWA ||
+      data.whatsapp || data.wa || data.hp || data.kontak || data.kontakTim || data.phone || ''
+    ).trim();
+    if(!rawPhone && isPending){
+      Object.keys(data).some(function(k){
+        if(/^(nohp|nohpwa|nowa|nomorwa|nomorwa|whatsapp|wa|hp|kontak|phone)$/i.test(k) && String(data[k]||'').trim()){
+          rawPhone = String(data[k]).trim(); return true;
+        }
+        return false;
+      });
+    }
 
+    /* Fallback terakhir: bila poster dipanggil dari kartu lama, cari ulang di cache sparring/booking. */
+    if(!rawPhone && isPending && data.mfKey && window.globalCache){
+      var si = (window.globalCache.sparring || {})[data.mfKey] || {};
+      rawPhone = String(si.noHp || si.noHP || si.noHpA || si.noHPA || si.noWA || si.nomorHp || si.nomorWA || si.whatsapp || si.phone || si.hp || '').trim();
+      if(!rawPhone){
+        var teamKey = String(si.timA || data.mfTeamA || '').trim().toLowerCase();
+        var dateKey = String(si.tanggal || data.mfTanggal || '').trim();
+        Object.values(window.globalCache.booking || {}).some(function(b){
+          var nm = String(b?.nama || b?.timA || b?.namaTim || '').trim().toLowerCase();
+          var dt = String(b?.tgl || b?.tanggal || '').split('T')[0];
+          if(teamKey && nm === teamKey && (!dateKey || dt === dateKey)){
+            rawPhone = String(b?.noHp || b?.noHP || b?.noWA || b?.nomorHp || b?.nomorWA || b?.whatsapp || b?.phone || b?.hp || '').trim();
+            return !!rawPhone;
+          }
+          return false;
+        });
+      }
+    }
+
+    /* Tampilkan nomor di kotak khusus Cari Lawan */
+    if(teamPhone) teamPhone.textContent = rawPhone || 'Nomor WA belum tersedia';
+    if(teamContact){
+      teamContact.classList.toggle('is-empty', !isPending || !rawPhone);
+    }
+
+    /* Pengaman tambahan: pada poster Cari Lawan, nomor di footer juga otomatis
+       berubah menjadi nomor WA tim. Jadi nomor tim tetap terlihat meskipun style
+       kotak khusus tertimpa oleh CSS lain. */
+    if(posterPhone){
+      posterPhone.textContent = (isPending && rawPhone) ? rawPhone : '0851 2405 7148';
+    }
     var tgl = fmtTanggal(data.mfTanggal);
     document.getElementById('mf-day').textContent = tgl.day;
     document.getElementById('mf-date').textContent = tgl.sub;
     document.getElementById('mf-time').textContent = fmtJam(data.mfJam);
-
     overlay.classList.add('mf-open');
     document.body.style.overflow = 'hidden';
   };
@@ -24495,7 +24644,8 @@ body:has(#page-customer-member:not(.hidden)) main {
           var nameA = (document.getElementById('mf-name-a').textContent || 'tim-a').trim();
           var nameB = (document.getElementById('mf-name-b').textContent || 'tim-b').trim();
           var safe = function(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); };
-          link.download = 'match-founded-' + safe(nameA) + '-vs-' + safe(nameB) + '.png';
+          var isPending = document.getElementById('mf-poster').classList.contains('mf-pending');
+           link.download = (isPending ? 'cari-lawan-' + safe(nameA) : 'match-founded-' + safe(nameA) + '-vs-' + safe(nameB)) + '.png';
           link.href = canvas.toDataURL('image/png');
           document.body.appendChild(link);
           link.click();
@@ -24521,9 +24671,10 @@ body:has(#page-customer-member:not(.hidden)) main {
             if(!blob){ shareBtn.disabled = false; shareBtn.textContent = originalText; return; }
             var nameA = (document.getElementById('mf-name-a').textContent || 'tim-a').trim();
             var nameB = (document.getElementById('mf-name-b').textContent || 'tim-b').trim();
-            var file = new File([blob], 'match-founded-' + nameA + '-vs-' + nameB + '.png', { type: 'image/png' });
+            var isPending = document.getElementById('mf-poster').classList.contains('mf-pending');
+            var file = new File([blob], (isPending ? 'cari-lawan-' + nameA : 'match-founded-' + nameA + '-vs-' + nameB) + '.png', { type: 'image/png' });
             if(navigator.canShare && navigator.canShare({ files: [file] })){
-              navigator.share({ files: [file], title: 'Match Founded', text: nameA + ' VS ' + nameB }).catch(function(){});
+              navigator.share({ files: [file], title: isPending ? 'Cari Lawan Sparing' : 'Match Founded', text: isPending ? nameA + ' sedang mencari lawan sparing' : nameA + ' VS ' + nameB }).catch(function(){});
             } else {
               var link = document.createElement('a');
               link.download = file.name;
