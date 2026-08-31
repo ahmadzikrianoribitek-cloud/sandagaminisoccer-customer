@@ -13,6 +13,8 @@
 <link href="ikon.png" rel="apple-touch-icon" sizes="152x152"/>
 <link href="ikon.png" rel="apple-touch-icon" sizes="167x167"/>
 <link href="ikon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=Caveat:wght@600;700&amp;family=Titan+One&amp;family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
         body { 
@@ -24111,7 +24113,7 @@ body:has(#page-customer-member:not(.hidden)) main {
 @keyframes mfPopIn{ from{opacity:0; transform:translateY(14px) scale(.96)} to{opacity:1; transform:translateY(0) scale(1)} }
 
 #mf-shell{
-    width:min(94vw,380px);
+    width:min(88vw,340px);
     display:flex; flex-direction:column; align-items:center;
     gap:14px;
     animation:mfPopIn .22s cubic-bezier(.2,.8,.2,1);
@@ -24121,19 +24123,22 @@ body:has(#page-customer-member:not(.hidden)) main {
 #mf-poster{
     position:relative;
     width:100%;
+    aspect-ratio:9/16;
     border-radius:22px;
     overflow:hidden;
     box-shadow:0 30px 70px rgba(0,0,0,.55);
     background:
-        radial-gradient(circle at 18% 8%, rgba(255,255,255,.10), transparent 32%),
-        linear-gradient(160deg,#5c0f18 0%,#7d1421 32%,#8f1626 55%,#5a0f18 78%,#3a0a10 100%);
+        radial-gradient(circle at 18% 6%, rgba(110,231,183,.28), transparent 34%),
+        radial-gradient(circle at 86% 92%, rgba(4,18,42,.55), transparent 55%),
+        linear-gradient(155deg,#065f46 0%,#0f766e 26%,#0a2850 58%,#04122a 100%);
     color:#fff;
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:5.5% 6% 4.5%;
+    justify-content:space-between;
+    padding:7% 7% 5%;
     box-sizing:border-box;
-    font-family:'Poppins','Montserrat',Arial,sans-serif;
+    font-family:'Plus Jakarta Sans','Poppins','Montserrat',Arial,sans-serif;
 }
 #mf-poster::before{
     /* diagonal light streaks, meniru referensi */
@@ -24147,7 +24152,7 @@ body:has(#page-customer-member:not(.hidden)) main {
 #mf-poster::after{
     content:"";
     position:absolute; inset:0;
-    background:radial-gradient(circle at 50% 0%, rgba(0,0,0,0), rgba(0,0,0,.30) 100%);
+    background:radial-gradient(circle at 50% 0%, rgba(0,0,0,0), rgba(2,10,24,.35) 100%);
     pointer-events:none;
 }
 .mf-corner-dots{
@@ -24174,45 +24179,101 @@ body:has(#page-customer-member:not(.hidden)) main {
 
 .mf-eyebrow{
     position:relative; z-index:1;
+    display:flex;
+    align-items:center;
+    gap:.7em;
+    width:78%;
+    max-width:280px;
     margin:0;
-    font-size:clamp(.62rem,3vw,.82rem);
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.72rem,3.4vw,.92rem);
     font-weight:800;
-    letter-spacing:.5em;
-    color:#f5e6c8;
-    text-shadow:0 2px 6px rgba(0,0,0,.4);
+    letter-spacing:.34em;
+    color:#a7f3d4;
+    background:none;
+    border:none;
+    padding:0;
+    border-radius:0;
+    text-shadow:none;
+}
+.mf-eyebrow::before,
+.mf-eyebrow::after{
+    content:"";
+    flex:1 1 auto;
+    height:1px;
+    background:linear-gradient(90deg, transparent, rgba(167,243,212,.75), transparent);
 }
 
 .mf-title{
     position:relative; z-index:1;
-    margin:1% 0 9%;
-    font-size:clamp(2.3rem,12.5vw,3.2rem);
-    font-weight:900;
-    line-height:.95;
-    letter-spacing:.02em;
+    width:100%;
+    margin:4% 0 5%;
+    font-family:'Anton','Poppins',sans-serif;
+    font-weight:400;
+    font-size:clamp(3.2rem,17vw,4.6rem);
+    line-height:1.05;
+    letter-spacing:.01em;
     text-align:center;
     text-transform:uppercase;
-    color:#ffd76a;
+    transform:skewX(-3deg);
+    color:transparent;
+    background:linear-gradient(180deg,#ffffff 0%,#c9fff0 32%,#5eead4 66%,#0ea5e9 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    -webkit-text-stroke:1.4px rgba(4,35,26,.65);
     text-shadow:
-        0 1px 0 #ffe9a8,
-        0 2px 0 #f6c453,
-        0 4px 0 #c9861a,
-        0 5px 0 #a66a12,
-        0 8px 14px rgba(0,0,0,.45);
+        0 0 14px rgba(94,234,212,.65),
+        0 0 34px rgba(45,212,191,.4),
+        0 10px 20px rgba(0,0,0,.5);
 }
+
+.mf-subtitle{ display:none; }
 
 .mf-matchup{
     position:relative; z-index:1;
     width:100%;
     display:flex;
-    align-items:center;
+    align-items:stretch;
     justify-content:center;
     gap:3%;
     margin-bottom:2%;
 }
 .mf-team{
     flex:1 1 0; min-width:0;
-    display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:8%;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6%;
+    padding:7% 4% 6%;
+    border-radius:16px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.22);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    box-shadow:0 8px 20px rgba(0,0,0,.2);
 }
+.mf-team-home{
+    background:linear-gradient(165deg, rgba(16,185,129,.28), rgba(16,185,129,.05));
+    border-color:rgba(110,231,183,.45);
+}
+.mf-team-away{
+    background:linear-gradient(165deg, rgba(14,165,233,.28), rgba(14,165,233,.05));
+    border-color:rgba(125,211,252,.45);
+}
+.mf-team-role{ display:none; }
+#mf-poster.mf-pending .mf-team-role{ display:none; }
+#mf-poster.mf-pending .mf-team{
+    background:rgba(0,0,0,.16);
+    border-color:rgba(255,255,255,.32);
+}
+#mf-poster.mf-pending .mf-team-home{
+    background:linear-gradient(165deg, rgba(255,255,255,.22), rgba(255,255,255,.04));
+    border-color:rgba(255,255,255,.4);
+}
+#mf-poster.mf-pending .mf-team-away{
+    background:linear-gradient(165deg, rgba(250,204,21,.26), rgba(234,88,12,.08));
+    border-color:rgba(250,204,21,.5);
+}
+#mf-poster.mf-pending .mf-team-role{ color:#fff3cd; }
+#mf-poster.mf-pending .mf-team-away .mf-team-role{ color:#ffe6a3; }
 .mf-team-logo{
     height:clamp(78px,24vw,112px);
     max-width:94%;
@@ -24235,22 +24296,39 @@ body:has(#page-customer-member:not(.hidden)) main {
 }
 .mf-team-name{
     max-width:100%;
-    font-size:clamp(.72rem,3.6vw,.98rem);
-    font-weight:900;
-    letter-spacing:.02em;
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.56rem,3.4vw,.98rem);
+    font-weight:800;
+    letter-spacing:.01em;
     text-transform:uppercase;
     text-align:center;
     color:#fff;
-    text-shadow:0 2px 5px rgba(0,0,0,.45);
-    overflow-wrap:anywhere;
+    text-shadow:0 2px 5px rgba(0,0,0,.5);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 .mf-vs{
+    position:relative;
+    align-self:center;
     flex:0 0 auto;
-    font-size:clamp(1.5rem,7.5vw,2.1rem);
-    font-weight:900;
-    font-style:italic;
-    color:#fff;
-    text-shadow:0 3px 8px rgba(0,0,0,.5);
+    display:flex; align-items:center; justify-content:center;
+    width:clamp(2.3rem,9.5vw,2.9rem);
+    height:clamp(2.3rem,9.5vw,2.9rem);
+    border-radius:50%;
+    background:linear-gradient(135deg,#d1fae5,#10b981);
+    font-family:'Anton','Poppins',sans-serif;
+    font-style:normal;
+    font-size:clamp(.85rem,3.8vw,1.1rem);
+    color:#04231a;
+    box-shadow:0 6px 14px rgba(0,0,0,.3), inset 0 0 0 2px rgba(255,255,255,.45);
+}
+.mf-vs::before{
+    content:"";
+    position:absolute;
+    inset:-9px;
+    border-radius:50%;
+    border:1.5px dashed rgba(255,255,255,.55);
 }
 
 .mf-info-bar{
@@ -24260,8 +24338,8 @@ body:has(#page-customer-member:not(.hidden)) main {
     margin-bottom:5%;
     padding:2px;
     border-radius:14px;
-    background:linear-gradient(100deg,#38bdf8 0%,#38bdf8 45%,#4ade80 100%);
-    box-shadow:0 0 16px rgba(56,189,248,.35), 0 0 16px rgba(74,222,128,.28);
+    background:linear-gradient(100deg,#6ee7b7 0%,#34d399 45%,#0ea5e9 100%);
+    box-shadow:0 0 16px rgba(52,211,153,.35), 0 0 16px rgba(14,165,233,.28);
 }
 .mf-info-bar-inner{
     display:flex;
@@ -24270,17 +24348,17 @@ body:has(#page-customer-member:not(.hidden)) main {
     gap:2%;
     padding:3.2% 4%;
     border-radius:12px;
-    background:#160a0d;
+    background:#04142c;
 }
 .mf-info-item{
     flex:1 1 0; min-width:0;
     display:flex; align-items:center; gap:7px;
 }
 .mf-info-item svg{ flex:0 0 auto; width:20px; height:20px; opacity:.92; }
-.mf-info-text{ min-width:0; line-height:1.18; }
+.mf-info-text{ min-width:0; line-height:1.18; font-family:'Plus Jakarta Sans','Poppins',sans-serif; }
 .mf-info-day{
     font-size:clamp(.66rem,3.1vw,.82rem);
-    font-weight:900;
+    font-weight:800;
     letter-spacing:.03em;
     text-transform:uppercase;
     color:#fff;
@@ -24292,7 +24370,7 @@ body:has(#page-customer-member:not(.hidden)) main {
 }
 .mf-info-time{
     font-size:clamp(.9rem,4.4vw,1.2rem);
-    font-weight:900;
+    font-weight:800;
     color:#fff;
     line-height:1;
 }
@@ -24301,7 +24379,7 @@ body:has(#page-customer-member:not(.hidden)) main {
     font-size:clamp(.56rem,2.6vw,.66rem);
     font-weight:900;
     letter-spacing:.05em;
-    color:#4ade80;
+    color:#6ee7b7;
 }
 .mf-divider{ width:1px; align-self:stretch; background:rgba(255,255,255,.28); }
 
@@ -24336,9 +24414,159 @@ body:has(#page-customer-member:not(.hidden)) main {
 }
 #mf-poster.mf-pending .mf-team-contact{ display:block; }
 #mf-poster.mf-pending .mf-team-contact.is-empty{ display:block; opacity:.92; }
-#mf-poster.mf-pending .mf-title{ font-size:clamp(2rem,9.8vw,2.7rem); line-height:.95; white-space:pre-line; margin-bottom:6%; }
-#mf-poster.mf-pending .mf-status{ display:block; }
-#mf-poster.mf-pending .mf-team-logo .mf-question{ height:86%; aspect-ratio:1/1; border-radius:50%; display:flex; align-items:center; justify-content:center; text-align:center; background:linear-gradient(135deg,#f6c453,#c9861a); border:4px solid rgba(255,255,255,.72); color:#3a2405; font-size:clamp(2.8rem,12vw,4rem); font-weight:950; line-height:1; text-shadow:0 2px 0 rgba(255,255,255,.3); filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+#mf-poster.mf-pending .mf-status{ display:none; }
+#mf-poster.mf-pending .mf-team-logo .mf-question{ height:86%; aspect-ratio:1/1; border-radius:50%; display:flex; align-items:center; justify-content:center; text-align:center; background:linear-gradient(135deg,#facc15,#ea580c); border:4px solid rgba(255,255,255,.78); color:#5c1a04; font-size:clamp(2.8rem,12vw,4rem); font-weight:950; line-height:1; text-shadow:0 2px 0 rgba(255,255,255,.35); filter:drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+
+/* =========================================================
+   POSTER "CARI LAWAN SPARING" — revisi tema kuning->oranye
+   Rasio 9:16, tipografi dinamis (tidak kaku), selaras dengan
+   warna kartu "TIM YANG MENCARI LAWAN" (#facc15 -> #ea580c).
+   ========================================================= */
+#mf-poster.mf-pending{
+    background:
+        radial-gradient(circle at 16% 6%, rgba(255,241,181,.35), transparent 34%),
+        radial-gradient(circle at 88% 92%, rgba(120,53,15,.55), transparent 55%),
+        linear-gradient(155deg, #c2410c 0%, #ea580c 32%, #f59e0b 58%, #9a3412 100%);
+}
+#mf-poster.mf-pending::before{
+    background:
+        linear-gradient(115deg, transparent 0%, transparent 38%, rgba(255,255,255,.16) 42%, rgba(255,255,255,.16) 46%, transparent 50%),
+        linear-gradient(115deg, transparent 55%, rgba(255,255,255,.12) 60%, transparent 66%);
+}
+#mf-poster.mf-pending::after{
+    background:radial-gradient(circle at 50% 0%, rgba(0,0,0,0), rgba(80,26,4,.38) 100%);
+}
+#mf-poster.mf-pending .mf-corner-dots{
+    background-image:radial-gradient(rgba(255,255,255,.6) 1.3px, transparent 1.4px);
+    opacity:.4;
+}
+
+/* Padatkan jarak vertikal supaya semua konten (termasuk footer)
+   selalu muat di dalam rasio 9:16 dan tidak terpotong. */
+#mf-poster.mf-pending{ padding:6% 7% 8%; justify-content:flex-start; }
+#mf-poster.mf-pending .mf-badge-logo{ max-width:60px; margin-bottom:6%; }
+#mf-poster.mf-pending .mf-matchup{ margin-bottom:1%; }
+#mf-poster.mf-pending .mf-team-logo{ height:clamp(64px,19vw,88px); }
+#mf-poster.mf-pending .mf-info-bar{ margin-top:3%; margin-bottom:3%; }
+#mf-poster.mf-pending .mf-team-contact{ margin:1% 0 2%; padding:8px 14px; }
+#mf-poster.mf-pending .mf-footer{ gap:1.6%; }
+
+/* Eyebrow jadi pil kaca kecil, bukan teks kaku berjarak lebar */
+#mf-poster.mf-pending .mf-eyebrow{
+    display:inline-block;
+    width:auto;
+    max-width:none;
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.56rem,2.6vw,.68rem);
+    font-weight:800;
+    letter-spacing:.22em;
+    color:#fff8e7;
+    background:rgba(0,0,0,.18);
+    border:1px solid rgba(255,255,255,.55);
+    padding:.4em 1.1em;
+    border-radius:999px;
+    text-shadow:none;
+}
+#mf-poster.mf-pending .mf-eyebrow::before,
+#mf-poster.mf-pending .mf-eyebrow::after{ content:none; }
+
+/* Judul dua-baris: baris pertama jadi aksen miring & kecil,
+   baris kedua besar & tebal — kombinasi ini yang bikin
+   headline terasa hidup, bukan blok teks rata kaku. */
+#mf-poster.mf-pending .mf-title{
+    font-family:'Titan One','Anton','Poppins',sans-serif;
+    font-weight:400;
+    font-size:clamp(2.3rem,12.2vw,3.3rem);
+    line-height:1.18;
+    letter-spacing:0;
+    white-space:pre-line;
+    margin:3% 0 5%;
+    transform:rotate(-2deg);
+    color:transparent;
+    background:linear-gradient(180deg,#fffdf5 0%,#ffd76a 45%,#ff8a00 80%,#ff5400 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    -webkit-text-stroke:1.3px rgba(45,10,0,.6);
+    text-shadow:
+        0 0 14px rgba(255,140,0,.5),
+        0 0 30px rgba(255,84,0,.32),
+        0 8px 16px rgba(0,0,0,.45);
+}
+#mf-poster.mf-pending .mf-title::first-line{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:.4em;
+    font-weight:800;
+    letter-spacing:.28em;
+    font-style:normal;
+    color:#fff8e7;
+    -webkit-text-fill-color:#fff8e7;
+    -webkit-text-stroke:.8px rgba(45,10,0,.55);
+    text-shadow:0 0 8px rgba(255,255,255,.4), 0 4px 8px rgba(0,0,0,.35);
+}
+
+#mf-poster.mf-pending .mf-team-name{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    color:#fff;
+    -webkit-text-stroke:.6px rgba(90,26,4,.85);
+    text-shadow:0 3px 6px rgba(0,0,0,.35);
+}
+
+/* VS jadi lencana bulat kecil, sedikit miring, senada emas */
+#mf-poster.mf-pending .mf-vs{
+    display:flex; align-items:center; justify-content:center;
+    align-self:center;
+    width:clamp(2.3rem,9.5vw,2.9rem);
+    height:clamp(2.3rem,9.5vw,2.9rem);
+    border-radius:50%;
+    background:linear-gradient(135deg,#fff3cd,#facc15);
+    font-family:'Anton','Poppins',sans-serif;
+    font-style:normal;
+    font-size:clamp(.85rem,3.8vw,1.1rem);
+    color:#7a2205;
+    box-shadow:0 6px 14px rgba(0,0,0,.28), inset 0 0 0 2px rgba(255,255,255,.6);
+    transform:rotate(-8deg);
+    text-shadow:none;
+}
+
+#mf-poster.mf-pending .mf-info-bar{
+    background:linear-gradient(100deg,#fde68a 0%,#facc15 45%,#ea580c 100%);
+    box-shadow:0 0 16px rgba(250,204,21,.4), 0 0 16px rgba(234,88,12,.32);
+}
+#mf-poster.mf-pending .mf-info-bar-inner{ background:#4a1607; }
+#mf-poster.mf-pending .mf-info-day,
+#mf-poster.mf-pending .mf-info-time{ font-family:'Plus Jakarta Sans','Poppins',sans-serif; }
+#mf-poster.mf-pending .mf-info-time-sub{ color:#fbbf24; }
+
+#mf-poster.mf-pending .mf-status{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    border-color:rgba(122,34,5,.4);
+    background:rgba(255,255,255,.4);
+    color:#5c1a04;
+    transform:rotate(1.5deg);
+}
+
+#mf-poster.mf-pending .mf-team-contact{
+    border-color:rgba(122,34,5,.45);
+    background:rgba(255,255,255,.5);
+    box-shadow:0 6px 16px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.5);
+}
+#mf-poster.mf-pending .mf-team-contact-label{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    color:rgba(90,26,4,.85);
+}
+#mf-poster.mf-pending .mf-team-contact-number{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    color:#5c1a04;
+}
+
+#mf-poster.mf-pending .mf-footer-row{
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    color:#fffdf5;
+    text-shadow:0 2px 5px rgba(0,0,0,.5);
+}
+#mf-poster.mf-pending .mf-footer-icon svg{ stroke:#fffdf5 !important; }
+#mf-poster.mf-pending .mf-footer-icon svg[fill="#fff"]{ fill:#fffdf5 !important; }
 .mf-footer{
     position:relative; z-index:1;
     width:100%;
@@ -24357,6 +24585,224 @@ body:has(#page-customer-member:not(.hidden)) main {
 }
 .mf-footer-icon svg{ width:100%; height:100%; display:block; opacity:.9; }
 .mf-footer-sep{ opacity:.55; }
+.mf-tagline{
+    margin-top:1.6%;
+    width:100%;
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.5rem,2.4vw,.62rem);
+    font-weight:800;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    text-align:center;
+    color:rgba(255,255,255,.6);
+}
+#mf-poster.mf-pending .mf-tagline{ display:none; }
+
+/* =========================================================
+   POSTER "CARI LAWAN SPARING" v2 — latar gambar statis
+   (latarsparing.png). Semua elemen tetap (judul, logo besar,
+   pill, frame kartu, frame info, frame WA, footer) sudah
+   "dibakar" ke dalam gambar. CSS di bawah ini HANYA menaruh
+   data dinamis (logo tim, nama tim, hari/tanggal/jam, no WA)
+   persis di atas kotak-kotak kosong pada gambar tsb.
+   Ganti nilai top/left/width/height kalau posisi meleset
+   sedikit dari hasil render — semua dalam persen supaya
+   tetap presisi di berbagai ukuran layar (poster selalu 9:16).
+   ========================================================= */
+#mf-poster.mf-pending{
+    background-image:url('latarsparing.png');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    background-color:#0a0a0a; /* fallback selama gambar belum termuat */
+    padding:0;
+    justify-content:flex-start;
+}
+/* Matikan semua dekorasi lama (gradient, corner dots, judul,
+   pill, logo besar, footer) — sudah ada di gambar latar. */
+#mf-poster.mf-pending::before,
+#mf-poster.mf-pending::after{ content:none; background:none; }
+#mf-poster.mf-pending .mf-corner-dots{ display:none; }
+#mf-poster.mf-pending .mf-badge-logo{ display:none; }
+#mf-poster.mf-pending .mf-eyebrow{ display:none; }
+#mf-poster.mf-pending .mf-title{ display:none; }
+#mf-poster.mf-pending .mf-footer{ display:none; }
+
+/* --- Kartu Tim A (kiri) & Tim B (kanan) --- */
+#mf-poster.mf-pending .mf-matchup{
+    position:absolute;
+    inset:0;
+    margin:0;
+    padding:0;
+    display:block;
+    z-index:2;
+}
+#mf-poster.mf-pending .mf-vs{ display:none; } /* badge VS sudah ada di gambar */
+
+/* Kartu: logo dipaskan di TENGAH kotak placeholder, nama tim jadi
+   elemen terpisah yang nempel ~5px di atas garis bawah placeholder
+   (bukan lagi menumpuk pakai flex dari atas). */
+#mf-poster.mf-pending .mf-team{
+    position:absolute;
+    top:43.3%;
+    height:16.8%;
+    background:none;
+    border:none;
+    box-shadow:none;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    padding:0;
+    display:block;
+    overflow:visible;
+}
+#mf-poster.mf-pending .mf-team-home{ left:7.2%; width:34.5%; }
+#mf-poster.mf-pending .mf-team-away{ left:58.2%; width:34.5%; }
+#mf-poster.mf-pending .mf-team-logo{
+    position:absolute;
+    top:-20%;
+    left:5%;
+    right:-45%;
+    bottom:-15%;
+    height:auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+/* Tim kanan (away) digeser cermin ke arah sebaliknya supaya logo
+   tetap sejajar dengan nama tim tanpa terpotong tepi poster. */
+#mf-poster.mf-pending .mf-team-away .mf-team-logo{
+    left:-45%;
+    right:5%;
+}
+#mf-poster.mf-pending .mf-team-logo img{
+    max-height:100%;
+    max-width:100%;
+    height:auto;
+    width:auto;
+    object-fit:contain;
+}
+#mf-poster.mf-pending .mf-team-logo .mf-fallback{
+    width:82%;
+    height:auto;
+    max-height:100%;
+    aspect-ratio:1/1;
+    font-size:clamp(.9rem,4.2vw,1.3rem);
+}
+#mf-poster.mf-pending .mf-team-name{
+    position:absolute;
+    left:4%;
+    right:4%;
+    bottom:-50px;
+    text-align:center;
+    white-space:normal;
+    word-break:break-word;
+    overflow:hidden;
+    text-overflow:clip;
+    line-height:1.12;
+    font-size:clamp(.5rem,3vw,.72rem);
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    color:#ffffff;
+    text-shadow:none;
+    -webkit-text-stroke:.4px rgba(60,20,0,.55);
+}
+#mf-poster.mf-pending .mf-team-role{ display:none; }
+
+/* --- Baris tanggal & jam (di dalam frame info yang sudah ada) ---
+   Posisi kolom dihitung dari ikon kalender/jam yang sudah ada di
+   gambar (kalender berpusat ~14%, jam berpusat ~60% dari lebar
+   poster), teks diletakkan tepat setelah masing-masing ikon. */
+#mf-poster.mf-pending .mf-info-bar{
+    position:absolute;
+    left:6%;
+    right:6%;
+    top:69.4%;
+    height:7.6%;
+    margin:0;
+    padding:0;
+    background:none;
+    box-shadow:none;
+    z-index:2;
+}
+#mf-poster.mf-pending .mf-info-bar-inner{
+    position:relative;
+    height:100%;
+    padding:0;
+    background:none;
+    border-radius:0;
+}
+#mf-poster.mf-pending .mf-info-item svg{ display:none; } /* ikon kalender/jam sudah di gambar */
+#mf-poster.mf-pending .mf-divider{ display:none; } /* garis pembatas sudah di gambar */
+#mf-poster.mf-pending .mf-info-item{
+    position:absolute;
+    top:0;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:0;
+}
+/* Kolom tanggal: dimulai setelah ikon kalender (~21% lebar poster),
+   dikonversi ke persen relatif lebar bar (bar = 88% lebar poster,
+   mulai di 6%): (21-6)/88 ≈ 17%. Kolom jam: setelah ikon jam (~64%)
+   → (64-6)/88 ≈ 66%. */
+#mf-poster.mf-pending .mf-info-item:first-child{ left:20%; width:34%; transform:translateY(23px); }
+#mf-poster.mf-pending .mf-info-item:last-child{ left:59%; width:32%; transform:translateY(22px); }
+#mf-poster.mf-pending .mf-info-day,
+#mf-poster.mf-pending .mf-info-sub,
+#mf-poster.mf-pending .mf-info-time,
+#mf-poster.mf-pending .mf-info-time-sub{ text-align:left; }
+#mf-poster.mf-pending .mf-info-time-sub{ display:none; } /* label "WITA" tidak ada di layout referensi */
+
+/* --- Nomor WA tim yang mencari lawan (di dalam bar WA yang sudah ada) ---
+   Ikon WA di gambar berakhir di ±22% lebar poster, jadi teks dimulai
+   sedikit setelahnya. */
+#mf-poster.mf-pending .mf-status{ display:none; }
+#mf-poster.mf-pending .mf-team-contact{
+    position:absolute;
+    left:25%;
+    right:7%;
+    top:80%;
+    height:8.6%;
+    margin:0;
+    padding:0;
+    background:none;
+    border:none;
+    box-shadow:none;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:6%;
+    text-align:left;
+    z-index:2;
+}
+#mf-poster.mf-pending .mf-team-contact-label{
+    display:block;
+    position:relative;
+    top:9px;
+    width:100%;
+    margin:0;
+    color:#4b3a2f;
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.42rem,2.2vw,.56rem);
+    font-weight:800;
+    letter-spacing:.01em;
+    text-transform:none;
+    line-height:1.15;
+}
+#mf-poster.mf-pending .mf-team-contact-number{
+    display:block;
+    position:relative;
+    top:10px;
+    color:#1f2937;
+    font-family:'Plus Jakarta Sans','Poppins',sans-serif;
+    font-size:clamp(.9rem,4.4vw,1.15rem);
+    font-weight:900;
+    line-height:1;
+    text-shadow:none;
+}
 
 
 @media (max-width:380px){
@@ -24370,15 +24816,18 @@ body:has(#page-customer-member:not(.hidden)) main {
       <div class="mf-corner-dots mf-corner-dots--br" aria-hidden="true"></div>      <div class="mf-badge-logo"><img src="logo.png" alt="Logo Klub"/></div>
       <p class="mf-eyebrow">M A T C H</p>
       <h2 class="mf-title">FOUNDED</h2>
+      <p class="mf-subtitle" id="mf-subtitle">Match Day</p>
       <div class="mf-matchup">
-        <div class="mf-team">
+        <div class="mf-team mf-team-home">
           <div class="mf-team-logo" id="mf-logo-a"></div>
           <div class="mf-team-name" id="mf-name-a">TIM A</div>
+          <div class="mf-team-role" id="mf-role-a">Home Team</div>
         </div>
         <div class="mf-vs">VS</div>
-        <div class="mf-team">
+        <div class="mf-team mf-team-away">
           <div class="mf-team-logo" id="mf-logo-b"></div>
           <div class="mf-team-name" id="mf-name-b">TIM B</div>
+          <div class="mf-team-role" id="mf-role-b">Away Team</div>
         </div>
       </div>
       <div class="mf-info-bar">
@@ -24402,7 +24851,7 @@ body:has(#page-customer-member:not(.hidden)) main {
       </div>
       <div class="mf-status" id="mf-status" aria-live="polite">⌛ MENCARI LAWAN</div>
       <div class="mf-team-contact" id="mf-team-contact" aria-live="polite">
-        <span class="mf-team-contact-label">HUBUNGI TIM VIA WHATSAPP</span>
+        <span class="mf-team-contact-label">Hubungi Tim yang Bersangkutan Via WhatsApp</span>
         <span class="mf-team-contact-number" id="mf-team-phone">-</span>
       </div>
       <div class="mf-footer">
@@ -24417,6 +24866,7 @@ body:has(#page-customer-member:not(.hidden)) main {
           <span class="mf-footer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></span>
           <span id="mf-social">@sandagaminisoccer2</span>
         </div>
+        <div class="mf-tagline" id="mf-tagline">» PLAY HARD. RESPECT. ENJOY THE GAME «</div>
       </div>
     </div>
   </div>
@@ -24476,7 +24926,7 @@ body:has(#page-customer-member:not(.hidden)) main {
     fillTeam(document.getElementById('mf-logo-a'), document.getElementById('mf-name-a'), data.mfTeamA, data.mfLogoA);
     var logoB = document.getElementById('mf-logo-b');
     var nameB = document.getElementById('mf-name-b');
-    if(isPending){ nameB.textContent = 'TIMMU?'; logoB.innerHTML = '<div class="mf-question">?</div>'; }
+    if(isPending){ nameB.textContent = 'TIMMU?'; logoB.innerHTML = ''; }
     else { fillTeam(logoB, nameB, data.mfTeamB, data.mfLogoB); }
     var title = document.querySelector('#mf-poster .mf-title');
     var eyebrow = document.querySelector('#mf-poster .mf-eyebrow');
