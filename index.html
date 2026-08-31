@@ -7852,8 +7852,10 @@ document.addEventListener('DOMContentLoaded', () => {
           function logoHtml(name,itemLogo){const logo=getLogo(name,itemLogo), safe=esc(name||'Tim'); if(logo)return `<div class="sparing-final-logo"><img src="${esc(logo)}" alt="Logo ${safe}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="sparing-final-logo-fallback" style="display:none">${initials(name)}</span></div>`;return `<div class="sparing-final-logo"><span class="sparing-final-logo-fallback">${initials(name)}</span></div>`;}
           function active(item,now,today){const d=String(item?.tanggal||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d<today)return false;if(d===today){const m=String(item?.jam||'').match(/(\d{1,2})(?::(\d{2}))?/);if(m){const h=+m[1],mi=+(m[2]||0);if(h>=0&&h<=23&&mi>=0&&mi<=59&&now>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0,0))return false;}}return true;}
           function meta(item,ok){const d=item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-';const j=esc(item?.jam||'-');return `<div class="${ok?'sparing-final-meta':'customer-sparring-meta'}"><span>📅 ${d}</span><span>⏰ ${j}</span><span class="${ok?'ok':'customer-sparring-status'}">${ok?'✓ SUDAH DAPAT LAWAN':'⌛ MENCARI LAWAN'}</span></div>`;}
-          function pendingCard(key,item){const a=String(item?.timA||'').trim();const rawCat=String(item?.catatan||'');const phone=String(item?.noHp||item?.noHP||item?.noHpA||item?.noHPA||item?.noWA||item?.noWa||item?.nomorHp||item?.nomorHP||item?.nomorWa||item?.nomorWA||item?.whatsapp||item?.wa||item?.phone||item?.hp||item?.kontak||item?.kontakTim||'').trim()||((rawCat.match(/(?:no\.?\s*(?:hp|wa)?|nomor(?:\s+(?:hp|wa))?|whatsapp|wa|hp)\s*[:\-]?\s*(\+?62|0)\s*[0-9][0-9\s-]{6,}/i)||['',''])[0].replace(/^[^0-9+]*(?=[+0-9])/,'').trim());const logoAUrl=getLogo(a,item?.logoA);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));return `<div class="customer-sparring-card match-pending-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Cari Lawan" data-mf-status="pending" data-mf-key="${esc(key)}" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="TIMMU?" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="" data-mf-phone="${esc(phone)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}">${meta(item,false)}<div class="sparing-final-team">${logoHtml(a,item?.logoA)}<div><div class="sparing-final-label">Tim yang mencari lawan</div><div class="sparing-final-name">${esc(a)}</div></div></div><div class="customer-sparring-vs">VS <span>Belum ada lawan</span></div><div class="customer-sparring-actions"><button type="button" class="customer-sparring-select" data-sparring-key="${esc(key)}" data-sparring-phone="${esc(phone)}">⚽ Pilih Tim Ini</button></div><div class="match-pending-hint">⌛ Ketuk untuk lihat poster Cari Lawan</div></div>`;}
-          function matchedCard(item){const a=String(item?.timA||'').trim(),b=String(item?.timB||item?.teamB||item?.lawan||'').trim();const logoAUrl=getLogo(a,item?.logoA),logoBUrl=getLogo(b,item?.logoB);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));return `<div class="sparing-final-matched match-founded-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Match Founded" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="${esc(b||'Lawan')}" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="${esc(logoBUrl)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}"><div class="sparing-final-meta"><span>📅 ${item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-'}</span><span>⏰ ${esc(item?.jam||'-')}</span><span class="ok">✓ SUDAH DAPAT LAWAN</span></div><div class="sparing-final-matchup"><div class="sparing-final-match-team">${logoHtml(a,item?.logoA)}<div class="sparing-final-name">${esc(a||'Tim A')}</div></div><div class="sparing-final-vs">VS</div><div class="sparing-final-match-team">${logoHtml(b,item?.logoB)}<div class="sparing-final-name">${esc(b||'Lawan')}</div></div></div><div class="sparing-final-footer">🤝 Pertandingan sudah mendapatkan lawan — <span class="match-founded-hint">Ketuk untuk lihat &amp; unduh poster</span></div></div>`;}
+          function formatTanggalIndoSaja(tgl){const hariArr=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];const bulanArr=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];const m=String(tgl||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '-';const dt=new Date(+m[1],+m[2]-1,+m[3]);const hari=hariArr[dt.getDay()],tggl=dt.getDate(),bln=bulanArr[dt.getMonth()],thn=dt.getFullYear();return `${hari}, ${tggl} ${bln} ${thn}`;}
+          function formatJamSaja(jam){const j=String(jam||'').trim();return j?j.replace(':','.'):'-';}
+          function pendingCard(key,item){const a=String(item?.timA||'').trim();const rawCat=String(item?.catatan||'');const phone=String(item?.noHp||item?.noHP||item?.noHpA||item?.noHPA||item?.noWA||item?.noWa||item?.nomorHp||item?.nomorHP||item?.nomorWa||item?.nomorWA||item?.whatsapp||item?.wa||item?.phone||item?.hp||item?.kontak||item?.kontakTim||'').trim()||((rawCat.match(/(?:no\.?\s*(?:hp|wa)?|nomor(?:\s+(?:hp|wa))?|whatsapp|wa|hp)\s*[:\-]?\s*(\+?62|0)\s*[0-9][0-9\s-]{6,}/i)||['',''])[0].replace(/^[^0-9+]*(?=[+0-9])/,'').trim());const logoAUrl=getLogo(a,item?.logoA);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));const tglLabel=esc(formatTanggalIndoSaja(item?.tanggal)),jamLabel=esc(formatJamSaja(item?.jam));return `<div class="customer-sparring-card match-pending-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Cari Lawan" data-mf-status="pending" data-mf-key="${esc(key)}" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="TIMMU?" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="" data-mf-phone="${esc(phone)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}"><div class="pending-card-topbar"><span class="pending-topbar-item"><svg class="pending-topbar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M3 9.5H21" stroke="currentColor" stroke-width="2"/><path d="M8 3V6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 3V6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${tglLabel}</span><span class="pending-topbar-divider"></span><span class="pending-topbar-item"><svg class="pending-topbar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7V12L15.5 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${jamLabel}</span></div><div class="pending-card-body">${logoHtml(a,item?.logoA)}<span class="pending-card-divider"></span><div class="sparing-final-name">${esc(a)}</div><button type="button" class="pending-card-select customer-sparring-select" data-sparring-key="${esc(key)}" data-sparring-phone="${esc(phone)}">Pilih<br>Tim Ini</button></div></div>`;}
+          function matchedCard(item){const a=String(item?.timA||'').trim(),b=String(item?.timB||item?.teamB||item?.lawan||'').trim();const logoAUrl=getLogo(a,item?.logoA),logoBUrl=getLogo(b,item?.logoB);const tglAttr=esc(String(item?.tanggal||'')),jamAttr=esc(String(item?.jam||''));return `<div class="sparing-final-matched match-founded-trigger" role="button" tabindex="0" title="Ketuk untuk lihat poster Match Founded" data-mf-team-a="${esc(a||'Tim A')}" data-mf-team-b="${esc(b||'Lawan')}" data-mf-logo-a="${esc(logoAUrl)}" data-mf-logo-b="${esc(logoBUrl)}" data-mf-tanggal="${tglAttr}" data-mf-jam="${jamAttr}"><div class="sparing-final-matchup"><div class="sparing-final-match-team">${logoHtml(a,item?.logoA)}</div><img class="sparing-final-vs" src="logovs.png" alt="VS" loading="lazy"><div class="sparing-final-match-team">${logoHtml(b,item?.logoB)}</div></div></div>`;}
           function section(icon,title,sub,count,html){return `<section class="sparing-final-section"><div class="sparing-final-head"><div class="sparing-final-title-wrap"><div class="sparing-final-icon">${icon}</div><div><h3 class="sparing-final-title">${title}</h3><p class="sparing-final-subtitle">${sub}</p></div></div><div class="sparing-final-count">${count}</div></div><div class="sparing-final-grid">${html}</div></section>`;}
           window.renderCustomerSparring = function(){
             const list=document.getElementById('customer-sparring-list');if(!list)return;
@@ -24897,7 +24899,7 @@ body:has(#page-customer-member:not(.hidden)) main {
     position:absolute;
     left:4%;
     right:4%;
-    bottom:-112px;
+    bottom:-98px;
     text-align:center;
     white-space:normal;
     word-break:break-word;
@@ -25170,3 +25172,734 @@ body:has(#page-customer-member:not(.hidden)) main {
   });
 })();
 </script>
+
+<!-- ===================================================================
+     REVISI DESAIN: Card "Mencari Lawan" & "Sudah Dapat Lawan"
+     - Menghilangkan keterangan "Ketuk untuk lihat poster" di card
+       Mencari Lawan.
+     - Menghilangkan keterangan "Pertandingan sudah mendapatkan lawan"
+       & "Ketuk untuk lihat & unduh poster" di card Sudah Dapat Lawan.
+     - Memastikan logo & nama tim tidak tumpang tindih (nama tim
+       panjang tetap rapi, logo & nama selalu punya jarak aman).
+     Visual only — tidak mengubah id, onclick, atau JS yang sudah ada.
+     =================================================================== -->
+<style id="revisi-clean-card-mencari-sudah-dapat-lawan">
+
+/* ---------- Sembunyikan keterangan "Ketuk..." pada kedua jenis card ---------- */
+#page-customer-sparring .match-pending-hint,
+#page-customer-sparring .sparing-final-footer{
+  display:none !important;
+}
+
+/* ---------- Rapikan jarak bawah card setelah keterangan dihilangkan ---------- */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger{
+  padding-bottom:14px !important;
+}
+#page-customer-sparring .customer-sparring-actions{
+  margin-bottom:0 !important;
+}
+#page-customer-sparring .sparing-final-matched{
+  padding-bottom:16px !important;
+}
+#page-customer-sparring .sparing-final-matchup{
+  margin-bottom:0 !important;
+}
+
+/* ---------- Card "Mencari Lawan": logo & nama tim tidak tumpang tindih ---------- */
+#page-customer-sparring .sparing-final-team{
+  display:flex !important;
+  align-items:center !important;
+  flex-wrap:nowrap !important;
+  gap:12px !important;
+}
+#page-customer-sparring .sparing-final-team .sparing-final-logo{
+  flex-shrink:0 !important;
+}
+#page-customer-sparring .sparing-final-team > div:last-child{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+}
+#page-customer-sparring .sparing-final-team .sparing-final-label{
+  white-space:normal !important;
+}
+#page-customer-sparring .sparing-final-team .sparing-final-name{
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  white-space:normal !important;
+  line-height:1.25 !important;
+}
+
+/* ---------- Card "Sudah Dapat Lawan": logo & nama tim tidak tumpang tindih ---------- */
+#page-customer-sparring .sparing-final-match-team{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo{
+  margin-bottom:2px !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-name{
+  width:100% !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  white-space:normal !important;
+  line-height:1.25 !important;
+  text-align:center !important;
+}
+
+@media (max-width:640px){
+  #page-customer-sparring .sparing-final-team{
+    gap:10px !important;
+  }
+  #page-customer-sparring .sparing-final-match-team{
+    gap:6px !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v2:
+     - Card "Sudah Dapat Lawan": jarak logo↔nama tim ditambah lagi
+       (khusus tampilan HP/mobile) supaya benar-benar tidak tumpang
+       tindih, termasuk untuk badge tim yang tulisannya sudah menyatu
+       di dalam gambar logo (mis. KULAWARGA, PGRI KEMENAG).
+     - Card "Mencari Lawan": disederhanakan jadi logo tim + nama tim
+       sejajar (horizontal), label "TIM YANG MENCARI LAWAN" dan baris
+       "VS Belum ada lawan" dihilangkan, logo diperbesar sedikit, dan
+       diberi jarak dari tepi kiri/kanan card supaya tidak mepet.
+     Visual only — tidak mengubah id, onclick, atau JS yang sudah ada.
+     =================================================================== -->
+<style id="revisi-clean-card-mencari-sudah-dapat-lawan-v2">
+
+/* ---------- Sudah Dapat Lawan: perbesar & kunci jarak logo↔nama ---------- */
+#page-customer-sparring .sparing-final-match-team{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:12px !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo{
+  overflow:hidden !important;
+  margin:0 !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-name{
+  margin-top:2px !important;
+  padding-top:0 !important;
+}
+@media (max-width:640px){
+  #page-customer-sparring .sparing-final-match-team{
+    gap:11px !important;
+  }
+}
+
+/* ---------- Mencari Lawan: logo + nama sejajar, tanpa label & VS ---------- */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-label,
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .customer-sparring-vs{
+  display:none !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team{
+  display:flex !important;
+  flex-direction:row !important;
+  flex-wrap:nowrap !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:16px !important;
+  margin:14px 20px 18px !important;
+  padding:0 !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-logo{
+  width:78px !important;
+  height:78px !important;
+  flex:0 0 78px !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team > div:last-child{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  text-align:left !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-name{
+  font-size:.92rem !important;
+  text-align:left !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .customer-sparring-actions{
+  margin-left:20px !important;
+  margin-right:20px !important;
+  width:auto !important;
+}
+@media (max-width:640px){
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team{
+    gap:14px !important;
+    margin:12px 16px 16px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-logo{
+    width:68px !important;
+    height:68px !important;
+    flex:0 0 68px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .customer-sparring-actions{
+    margin-left:16px !important;
+    margin-right:16px !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v3:
+     1) Card "Sudah Dapat Lawan": memperbaiki logo yang terpotong.
+        Penyebabnya adalah overflow:hidden pada patch sebelumnya —
+        sekarang dikembalikan ke overflow:visible (seperti bawaan
+        aslinya) supaya logo utuh & tidak ada bagian yang kepotong,
+        berapa pun rasio tinggi/lebar logonya. Layout tetap fleksibel
+        mengikuti tinggi konten, sehingga nama tim tidak akan menumpuk
+        dengan logo.
+     2) Card "Mencari Lawan": desain diubah jadi logo di tengah dan
+        nama tim di bawahnya (selaras dengan gaya card "Sudah Dapat
+        Lawan"), supaya lebih rapi dan proporsional dibanding versi
+        sejajar horizontal sebelumnya.
+     Visual only — tidak mengubah id, onclick, atau JS yang sudah ada.
+     =================================================================== -->
+<style id="revisi-clean-card-mencari-sudah-dapat-lawan-v3">
+
+/* ---------- 1) Sudah Dapat Lawan: logo dikembalikan utuh, tidak terpotong ---------- */
+#page-customer-sparring .sparing-final-match-team .sparing-final-logo{
+  overflow:visible !important;
+}
+#page-customer-sparring .sparing-final-matched,
+#page-customer-sparring .sparing-final-matchup,
+#page-customer-sparring .sparing-final-match-team{
+  height:auto !important;
+  min-height:0 !important;
+  overflow:visible !important;
+}
+
+/* ---------- 2) Mencari Lawan: logo di tengah, nama tim di bawahnya ---------- */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  margin:16px 18px 18px !important;
+  padding:0 !important;
+  text-align:center !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-logo{
+  width:82px !important;
+  height:82px !important;
+  flex:0 0 82px !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team > div:last-child{
+  width:100% !important;
+  flex:0 0 auto !important;
+  text-align:center !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-name{
+  text-align:center !important;
+  font-size:.9rem !important;
+}
+@media (max-width:640px){
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-team{
+    gap:9px !important;
+    margin:14px 16px 16px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .sparing-final-logo{
+    width:72px !important;
+    height:72px !important;
+    flex:0 0 72px !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v4:
+     Card "Sudah Dapat Lawan" — jarak logo ke nama tim ditambah lagi
+     (untuk kasus logo seperti MAG/PGRI KEMENAG & KULAWARGA yang
+     gambarnya nyaris penuh sampai ke tepi kotak, sehingga jarak
+     sebelumnya masih terasa mepet). Tinggi pembungkus card dibiarkan
+     otomatis/fleksibel mengikuti konten, sehingga nama tim turun ke
+     bawah dan tidak lagi bersinggungan dengan logo.
+     Visual only — tidak mengubah id, onclick, atau JS yang sudah ada.
+     =================================================================== -->
+<style id="revisi-clean-card-mencari-sudah-dapat-lawan-v4">
+#page-customer-sparring .sparing-final-match-team{
+  gap:22px !important;
+}
+#page-customer-sparring .sparing-final-match-team .sparing-final-name{
+  margin-top:0 !important;
+}
+#page-customer-sparring .sparing-final-matchup{
+  align-items:start !important;
+}
+@media (max-width:640px){
+  #page-customer-sparring .sparing-final-match-team{
+    gap:18px !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v5:
+     Card "Sudah Dapat Lawan":
+     - Ikon "VS" didesain ulang jadi lencana bulat dengan gradasi,
+       ring putih tipis, dan bayangan yang lebih halus supaya terlihat
+       lebih premium.
+     - Posisi "VS" dikunci agar selalu sejajar rata tengah dengan baris
+       LOGO saja (bukan ikut menyesuaikan ke tinggi nama tim di
+       bawahnya), jadi tetap center meskipun nama salah satu tim lebih
+       panjang / turun ke bawah lebih jauh dari yang lain.
+     Visual only — tidak mengubah id, onclick, atau JS yang sudah ada.
+     =================================================================== -->
+<style id="revisi-clean-card-mencari-sudah-dapat-lawan-v5">
+
+/* Matchup jadi grid 2 baris: baris-1 = logo (kiri, VS, kanan), baris-2 = nama tim */
+#page-customer-sparring .sparing-final-matchup{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr) !important;
+  grid-template-rows:auto auto !important;
+  align-items:start !important;
+  column-gap:8px !important;
+  row-gap:24px !important;
+}
+
+/* Bungkus tim jadi transparan secara struktur, anak-anaknya ikut jadi item grid */
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team{
+  display:contents !important;
+}
+
+/* Tim 1 (kiri): logo di kolom 1 baris 1, nama di kolom 1 baris 2 */
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team:first-child .sparing-final-logo{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  justify-self:center !important;
+}
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team:first-child .sparing-final-name{
+  grid-column:1 !important;
+  grid-row:2 !important;
+}
+
+/* Tim 2 (kanan): logo di kolom 3 baris 1, nama di kolom 3 baris 2 */
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team:last-child .sparing-final-logo{
+  grid-column:3 !important;
+  grid-row:1 !important;
+  justify-self:center !important;
+}
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team:last-child .sparing-final-name{
+  grid-column:3 !important;
+  grid-row:2 !important;
+}
+
+/* VS: kolom tengah, hanya mengikuti baris-1 (baris logo) → selalu center terhadap logo */
+#page-customer-sparring .sparing-final-vs{
+  grid-column:2 !important;
+  grid-row:1 !important;
+  align-self:center !important;
+  justify-self:center !important;
+  width:46px !important;
+  height:46px !important;
+  border-radius:50% !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:linear-gradient(145deg,#34d399,#047857) !important;
+  border:2px solid rgba(255,255,255,.85) !important;
+  box-shadow:0 8px 16px rgba(4,120,87,.42), inset 0 1px 2px rgba(255,255,255,.45) !important;
+  color:#fff !important;
+  font-size:.66rem !important;
+  font-weight:950 !important;
+  letter-spacing:.05em !important;
+  text-transform:uppercase !important;
+}
+
+@media (max-width:640px){
+  #page-customer-sparring .sparing-final-matchup{
+    grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr) !important;
+    row-gap:20px !important;
+  }
+  #page-customer-sparring .sparing-final-vs{
+    width:40px !important;
+    height:40px !important;
+    font-size:.6rem !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v6 (CARD MINIMAL):
+     Card "Sudah Dapat Lawan" disederhanakan total — hanya menampilkan
+     logo Tim 1, gambar logovs.png di tengah, dan logo Tim 2. Semua
+     keterangan (tanggal, jam, badge "SUDAH DAPAT LAWAN", nama tim,
+     teks footer) disembunyikan / tidak lagi dirender oleh JS.
+     Visual only — id, onclick, dan JS poster tetap berfungsi karena
+     data-mf-* attribute tidak diubah.
+     =================================================================== -->
+<style id="revisi-clean-card-minimal-logo-vs-logo-v6">
+/* Jaga-jaga: sembunyikan elemen lama jika masih ada di markup manapun */
+#page-customer-sparring .sparing-final-matched .sparing-final-meta,
+#page-customer-sparring .sparing-final-matched .sparing-final-footer,
+#page-customer-sparring .sparing-final-matched .sparing-final-name{
+  display:none !important;
+}
+
+#page-customer-sparring .sparing-final-matched{
+  padding:18px 14px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+#page-customer-sparring .sparing-final-matchup{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:14px !important;
+  width:100% !important;
+}
+
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  flex:0 0 auto !important;
+}
+
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team .sparing-final-logo{
+  width:88px !important;
+  height:88px !important;
+  flex-basis:88px !important;
+}
+
+/* Ikon VS: gambar logovs.png polos, TANPA frame/kotak/latar pembungkus apa pun */
+#page-customer-sparring .sparing-final-matchup img.sparing-final-vs{
+  flex:0 0 auto !important;
+  width:44px !important;
+  height:44px !important;
+  max-width:44px !important;
+  min-width:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  object-fit:contain !important;
+  display:block !important;
+}
+
+/* Konsistenkan ukuran & posisi logo tim supaya rapi/sejajar */
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team .sparing-final-logo{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+#page-customer-sparring .sparing-final-matchup .sparing-final-match-team .sparing-final-logo img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+}
+
+@media (max-width:640px){
+  #page-customer-sparring .sparing-final-matched{
+    padding:14px 10px !important;
+  }
+  #page-customer-sparring .sparing-final-matchup{
+    gap:10px !important;
+  }
+  #page-customer-sparring .sparing-final-matchup .sparing-final-match-team .sparing-final-logo{
+    width:66px !important;
+    height:66px !important;
+    flex-basis:66px !important;
+  }
+  #page-customer-sparring .sparing-final-matchup img.sparing-final-vs{
+    width:32px !important;
+    height:32px !important;
+    max-width:32px !important;
+  }
+}
+
+/* Override definitif — mengalahkan semua aturan lama (termasuk yang pakai
+   dua #id) yang masih memberi latar/border/box-shadow pada .sparing-final-vs,
+   supaya gambar logovs.png benar-benar polos tanpa bingkai. */
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched img.sparing-final-vs,
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matchup img.sparing-final-vs{
+  background:transparent !important;
+  border:none !important;
+  outline:none !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  padding:0 !important;
+  width:44px !important;
+  height:44px !important;
+}
+@media (max-width:640px){
+  #page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matched img.sparing-final-vs,
+  #page-customer-sparring #customer-sparring-list .sparing-final-grid .sparing-final-matchup img.sparing-final-vs{
+    width:32px !important;
+    height:32px !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v7 — CARD "MENCARI LAWAN" (pending):
+     Layout diubah mengikuti sketsa: baris atas berisi tanggal+jam dalam
+     satu baris teks (mis. "Senin, 31 Agustus 2026 jam 21.00"), lalu di
+     bawahnya logo (bulat) + nama tim di kiri, dan tombol "Pilih Tim Ini"
+     berbentuk kotak di kanan (sejajar dengan logo, bukan full-width di
+     bawah). Badge "MENCARI LAWAN" & label lama dihapus dari markup.
+     Visual only — class match-pending-trigger, customer-sparring-select,
+     dan data-mf-* tetap dipertahankan agar JS (poster & pilih tim) tetap
+     berfungsi.
+     =================================================================== -->
+<style id="revisi-pending-card-sketch-layout-v7">
+#page-customer-sparring .customer-sparring-card.match-pending-trigger{
+  display:flex !important;
+  flex-direction:column !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  height:auto !important;
+  min-height:0 !important;
+  background:linear-gradient(165deg,#221407 0%,#150c05 55%,#0a0603 100%) !important;
+  border:1px solid rgba(251,146,60,.45) !important;
+  border-radius:22px !important;
+  box-shadow:0 14px 30px rgba(0,0,0,.55) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+/* Baris atas: icon kalender + tanggal | icon jam + jam */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-topbar{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:14px !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  padding:13px 14px !important;
+  text-align:center !important;
+  font-size:.78rem !important;
+  font-weight:800 !important;
+  color:#ffe8d1 !important;
+  background:transparent !important;
+  border-bottom:1px solid rgba(251,146,60,.3) !important;
+  text-shadow:none !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-topbar-item{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:6px !important;
+  white-space:nowrap !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-topbar-icon{
+  width:15px !important;
+  height:15px !important;
+  flex:0 0 auto !important;
+  color:#fb923c !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-topbar-divider{
+  width:1px !important;
+  height:16px !important;
+  flex:0 0 auto !important;
+  background:rgba(251,146,60,.35) !important;
+}
+
+/* Baris bawah: logo | divider | nama tim (kiri) dan tombol kotak (kanan) */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body{
+  display:flex !important;
+  align-items:center !important;
+  gap:16px !important;
+  padding:18px 16px !important;
+  box-sizing:border-box !important;
+}
+
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-logo{
+  flex:0 0 auto !important;
+  width:72px !important;
+  height:72px !important;
+  margin:0 !important;
+}
+
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-divider{
+  flex:0 0 auto !important;
+  width:1px !important;
+  align-self:stretch !important;
+  background:rgba(251,146,60,.3) !important;
+}
+
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-name{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  color:#fff !important;
+  font-size:1.32rem !important;
+  font-weight:950 !important;
+  letter-spacing:.01em !important;
+  line-height:1.2 !important;
+  text-shadow:none !important;
+  overflow-wrap:anywhere !important;
+}
+
+/* Hilangkan badge inisial yang nongol di bawah logo (redundan — nama tim sudah tampil di tengah) */
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-logo-fallback{
+  display:none !important;
+}
+
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select{
+  flex:0 0 auto !important;
+  width:92px !important;
+  height:74px !important;
+  margin:0 !important;
+  padding:0 8px !important;
+  position:relative !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:2px !important;
+  text-align:center !important;
+  border-radius:18px !important;
+  border:none !important;
+  background:linear-gradient(160deg,#ffb648 0%,#fb923c 45%,#ea580c 100%) !important;
+  color:#fff !important;
+  font-size:.76rem !important;
+  font-weight:950 !important;
+  letter-spacing:.01em !important;
+  line-height:1.3 !important;
+  text-shadow:0 1px 2px rgba(120,40,0,.35) !important;
+  box-shadow:0 10px 22px rgba(234,88,12,.45), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 6px rgba(154,52,0,.25) !important;
+  transition:transform .15s ease, box-shadow .15s ease, filter .15s ease !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select::after{
+  content:"›" !important;
+  display:block !important;
+  font-size:1.1rem !important;
+  font-weight:900 !important;
+  line-height:1 !important;
+  margin-top:1px !important;
+  text-shadow:none !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select:hover{
+  filter:brightness(1.06) !important;
+  box-shadow:0 12px 26px rgba(234,88,12,.55), inset 0 1px 0 rgba(255,255,255,.4), inset 0 -3px 6px rgba(154,52,0,.25) !important;
+}
+#page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select:active{
+  transform:scale(.96) !important;
+  filter:brightness(.98) !important;
+}
+
+@media (max-width:640px){
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-topbar{
+    font-size:.68rem !important;
+    gap:10px !important;
+    padding:11px 10px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-topbar-icon{
+    width:13px !important;
+    height:13px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body{
+    padding:14px 10px !important;
+    gap:10px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-logo{
+    width:58px !important;
+    height:58px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-name{
+    font-size:1.02rem !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select{
+    width:74px !important;
+    height:62px !important;
+    font-size:.66rem !important;
+    border-radius:14px !important;
+  }
+  #page-customer-sparring .customer-sparring-card.match-pending-trigger .pending-card-select::after{
+    font-size:1rem !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v8 — HEADER PILL "TIM YANG MENCARI LAWAN":
+     Disamakan ke tema gelap/oranye seperti card di bawahnya (mengikuti
+     nuansa poster referensi: hitam/coklat gelap + aksen oranye), bukan
+     lagi kaca kuning->oranye terang. Hanya menyasar section pertama
+     (nth-of-type(1)) di dalam #customer-sparring-list, jadi TIDAK
+     memengaruhi header section lain di file ini.
+     Visual only — id, class, dan struktur JS tidak diubah.
+     =================================================================== -->
+<style id="revisi-header-pending-dark-orange-v8">
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-head{
+  background:linear-gradient(90deg,
+    rgba(10,6,3,0) 0%,
+    rgba(20,11,4,.55) 12%,
+    rgba(24,13,5,.92) 34%,
+    #140b03 50%,
+    rgba(24,13,5,.92) 66%,
+    rgba(20,11,4,.55) 88%,
+    rgba(10,6,3,0) 100%) !important;
+  border-top:1px solid rgba(251,146,60,.4) !important;
+  border-bottom:1px solid rgba(251,146,60,.25) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-icon{
+  background:linear-gradient(135deg,#fb923c,#c2410c) !important;
+  box-shadow:0 8px 18px rgba(194,65,12,.5) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-two-section-root > .sparing-final-section:nth-of-type(1) .sparing-final-count{
+  background:rgba(20,11,4,.7) !important;
+  border-color:rgba(251,146,60,.6) !important;
+  color:#ffe8d1 !important;
+}
+</style>
+
+<!-- ===================================================================
+     REVISI DESAIN v9 — FIX SPESIFISITAS:
+     CSS lama "#page-customer-sparring #customer-sparring-list
+     .sparing-final-grid .customer-sparring-card" pakai 2 #id, jadi
+     menang atas override v7 (yang cuma 1 #id) dan bikin background
+     kartu masih kaca oranye tembus foto, bukan gelap solid. Di sini
+     override ditulis ulang dengan prefix 2 #id yang sama supaya benar-
+     benar menang, dan pasti tampil paling akhir di file ini.
+     =================================================================== -->
+<style id="revisi-pending-card-dark-theme-specificity-fix-v9">
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger{
+  background:linear-gradient(165deg,#221407 0%,#150c05 55%,#0a0603 100%) !important;
+  border:1px solid rgba(251,146,60,.45) !important;
+  border-radius:22px !important;
+  box-shadow:0 14px 30px rgba(0,0,0,.55) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-card-topbar{
+  background:transparent !important;
+  border-bottom:1px solid rgba(251,146,60,.3) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-topbar-icon{
+  color:#fb923c !important;
+  -webkit-text-fill-color:#fb923c !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-topbar-divider{
+  background:rgba(251,146,60,.35) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-card-divider{
+  background:rgba(251,146,60,.3) !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-card-body .sparing-final-name{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .pending-card-select,
+#page-customer-sparring #customer-sparring-list .sparing-final-grid button.pending-card-select[onclick*="pilihSparringCustomer"],
+#page-customer-sparring #customer-sparring-list .sparing-final-grid .customer-sparring-card.match-pending-trigger .customer-sparring-select{
+  background:linear-gradient(160deg,#ffb648 0%,#fb923c 45%,#ea580c 100%) !important;
+  border:none !important;
+  box-shadow:0 10px 22px rgba(234,88,12,.45), inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 6px rgba(154,52,0,.25) !important;
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+}
+</style>
