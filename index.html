@@ -24696,15 +24696,11 @@ body:has(#page-customer-member:not(.hidden)) main {
     right:4%;
     bottom:-50px;
     text-align:center;
-    white-space:normal;
-    word-break:break-word;
+    white-space:nowrap;
     overflow:hidden;
-    text-overflow:clip;
+    text-overflow:ellipsis;
     line-height:1.12;
     font-size:clamp(.5rem,3vw,.72rem);
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
     color:#ffffff;
     text-shadow:none;
     -webkit-text-stroke:.4px rgba(60,20,0,.55);
@@ -24901,15 +24897,11 @@ body:has(#page-customer-member:not(.hidden)) main {
     right:4%;
     bottom:-98px;
     text-align:center;
-    white-space:normal;
-    word-break:break-word;
+    white-space:nowrap;
     overflow:hidden;
-    text-overflow:clip;
+    text-overflow:ellipsis;
     line-height:1.12;
     font-size:clamp(.5rem,3vw,.72rem);
-    display:-webkit-box;
-    -webkit-line-clamp:2;
-    -webkit-box-orient:vertical;
     color:#ffffff;
     text-shadow:none;
     -webkit-text-stroke:.4px rgba(60,20,0,.55);
@@ -24958,6 +24950,30 @@ body:has(#page-customer-member:not(.hidden)) main {
 
 @media (max-width:380px){
     #mf-shell{ width:96vw; }
+}
+
+/* =========================================================
+   MODE FULLSCREEN — saat poster diklik (bukan overlay/luar
+   poster), poster yang SUDAH tampil rapi (rounded, posisi
+   pas) itu langsung diperbesar apa adanya pakai transform:scale
+   (bukan resize/reflow ulang layout). Dengan cara ini posisi
+   internal (nama tim, tanggal, jam) dijamin identik dengan
+   versi rounded — hanya ukurannya yang membesar — lalu sudut
+   dibuat tidak rounded. Klik poster lagi (atau di luar poster)
+   mengembalikan ke ukuran semula.
+   ========================================================= */
+#mf-poster{
+    cursor:zoom-in;
+    transition:transform .22s ease, border-radius .22s ease;
+    transform-origin:center center;
+    will-change:transform;
+}
+#mf-overlay.mf-expanded{ padding:0; }
+#mf-overlay.mf-expanded #mf-shell{ animation:none; }
+#mf-overlay.mf-expanded #mf-poster{
+    cursor:zoom-out;
+    border-radius:0 !important;
+    box-shadow:none;
 }
 </style>
 <div id="mf-overlay" role="dialog" aria-modal="true" aria-label="Poster Match Founded">
@@ -25051,6 +25067,24 @@ body:has(#page-customer-member:not(.hidden)) main {
     return String(name||'TM').trim().split(/\s+/).filter(Boolean).slice(0,2).map(function(w){return w[0];}).join('').toUpperCase() || 'TM';
   }
 
+  /* Paksa nama tim tetap satu baris: kalau teks lebih lebar dari
+     ruang yang tersedia (kotak nama di atas gambar poster), font
+     diperkecil sedikit demi sedikit sampai pas — posisi/koordinat
+     kotak nama tetap sama persis, tidak pernah pindah baris. */
+  function fitTeamName(el){
+    if(!el) return;
+    el.style.fontSize = '';
+    var maxSize = parseFloat(getComputedStyle(el).fontSize) || 14;
+    var minSize = 7.5;
+    var size = maxSize;
+    var guard = 0;
+    while(el.scrollWidth > el.clientWidth && size > minSize && guard < 60){
+      size -= 0.5;
+      el.style.fontSize = size + 'px';
+      guard++;
+    }
+  }
+
   function fillTeam(logoBoxEl, nameEl, name, logoUrl){
     nameEl.textContent = name || 'TIM';
     logoBoxEl.innerHTML = '';
@@ -25139,22 +25173,58 @@ body:has(#page-customer-member:not(.hidden)) main {
     document.getElementById('mf-day').textContent = tgl.day;
     document.getElementById('mf-date').textContent = tgl.sub;
     document.getElementById('mf-time').textContent = fmtJam(data.mfJam);
+    /* Setiap poster dibuka ulang (klik card baru), selalu mulai dari
+       tampilan normal (rounded, belum fullscreen). */
+    overlay.classList.remove('mf-expanded');
+    poster.style.transform = '';
     overlay.classList.add('mf-open');
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function(){
+      fitTeamName(document.getElementById('mf-name-a'));
+      fitTeamName(document.getElementById('mf-name-b'));
+    });
   };
+
+  /* Membesarkan poster yang SUDAH pas (rounded) apa adanya, murni
+     lewat transform:scale — bukan resize/reflow ulang layout — supaya
+     posisi nama tim/tanggal/jam dijamin tetap identik dengan versi
+     rounded, hanya ukurannya yang jadi lebih besar memenuhi layar. */
+  function applyExpandScale(){
+    var overlay = document.getElementById('mf-overlay');
+    var poster = document.getElementById('mf-poster');
+    if(!overlay || !poster) return;
+    if(!overlay.classList.contains('mf-expanded')){
+      poster.style.transform = '';
+      return;
+    }
+    // Ukur dulu ukuran asli poster (rounded, belum di-scale).
+    poster.style.transform = 'none';
+    var rect = poster.getBoundingClientRect();
+    if(!rect.width || !rect.height) return;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    // Ambil skala terbesar yang masih muat penuh di layar tanpa
+    // memotong sisi mana pun (otomatis: lebar penuh di HP, tinggi
+    // penuh di desktop — tergantung mana yang jadi batasnya).
+    var scale = Math.min(vw / rect.width, vh / rect.height);
+    poster.style.transform = 'scale(' + scale + ')';
+  }
 
   function closePoster(){
     var overlay = document.getElementById('mf-overlay');
+    var poster = document.getElementById('mf-poster');
     if(!overlay) return;
     overlay.classList.remove('mf-open');
+    overlay.classList.remove('mf-expanded');
+    if(poster) poster.style.transform = '';
     document.body.style.overflow = '';
   }
 
   document.addEventListener('DOMContentLoaded', function(){
     var overlay = document.getElementById('mf-overlay');
+    var poster = document.getElementById('mf-poster');
     if(overlay){
       overlay.addEventListener('click', function(e){
-        var poster = document.getElementById('mf-poster');
         // Tutup otomatis kalau klik terjadi di luar area poster (overlay
         // atau ruang kosong di sekitarnya), dan hentikan event supaya tidak
         // ikut memicu tombol/elemen lain di halaman di baliknya.
@@ -25165,6 +25235,22 @@ body:has(#page-customer-member:not(.hidden)) main {
         }
       });
     }
+    if(poster){
+      // Klik pada poster (bukan di luar poster) -> toggle mode fullscreen:
+      // poster yang sudah pas (rounded) diperbesar apa adanya via scale,
+      // sudut jadi tidak rounded.
+      // stopPropagation supaya tidak ikut kena handler "klik di luar" di atas.
+      poster.addEventListener('click', function(e){
+        e.stopPropagation();
+        overlay.classList.toggle('mf-expanded');
+        applyExpandScale();
+      });
+    }
+    // Kalau layar diputar/di-resize saat sedang mode fullscreen,
+    // hitung ulang skalanya supaya tetap pas memenuhi layar.
+    window.addEventListener('resize', function(){
+      if(overlay && overlay.classList.contains('mf-expanded')) applyExpandScale();
+    });
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape') closePoster();
     });
