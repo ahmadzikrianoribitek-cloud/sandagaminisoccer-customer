@@ -8065,6 +8065,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     autocomplete="organization"
                     maxlength="60"
                     placeholder="Contoh: Sandaga FC">
+                <label class="customer-sparring-modal-label" for="customer-sparring-team-phone">Nomor WhatsApp</label>
+                <input id="customer-sparring-team-phone"
+                    class="customer-sparring-modal-input"
+                    type="tel"
+                    inputmode="numeric"
+                    autocomplete="tel"
+                    maxlength="20"
+                    placeholder="Contoh: 08123456789">
                 <div class="customer-sparring-modal-actions">
                     <button type="button" id="customer-sparring-modal-cancel" class="customer-sparring-modal-cancel">Batal</button>
                     <button type="button" id="customer-sparring-modal-save" class="customer-sparring-modal-save">Konfirmasi ke Tim</button>
@@ -8076,6 +8084,8 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.remove('is-open');
             const input = document.getElementById('customer-sparring-team-name');
             if(input) input.value = '';
+            const phoneInput = document.getElementById('customer-sparring-team-phone');
+            if(phoneInput) phoneInput.value = '';
         };
 
         modal.querySelector('.customer-sparring-modal-backdrop').addEventListener('click', (event) => {
@@ -8103,9 +8113,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById('customer-sparring-team-name');
             const namaBersih = String(input?.value || '').trim();
 
+            const phoneInputEl = document.getElementById('customer-sparring-team-phone');
+            const noHpBRaw = String(phoneInputEl?.value || '').trim();
+
             if(!namaBersih){
                 input?.focus();
                 alert('Nama tim wajib diisi.');
+                return;
+            }
+
+            if(!noHpBRaw){
+                phoneInputEl?.focus();
+                alert('Nomor WhatsApp tim kamu wajib diisi.');
+                return;
+            }
+
+            const noHpBBersih = window.normalisasiNomorWhatsAppCustomer(noHpBRaw);
+            if(!noHpBBersih || noHpBBersih === '62'){
+                phoneInputEl?.focus();
+                alert('Nomor WhatsApp tim kamu tidak valid.');
                 return;
             }
 
@@ -8161,7 +8187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await update(ref(db, `sparring/${currentKey}`), {
                     status: 'matched',
                     timB: namaBersih,
-                    noHpB: phone,
+                    noHpB: noHpBBersih,
                     matchedAt: Date.now()
                 });
 
@@ -8169,7 +8195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(globalCache.sparring && globalCache.sparring[currentKey]){
                     globalCache.sparring[currentKey].status = 'matched';
                     globalCache.sparring[currentKey].timB = namaBersih;
-                    globalCache.sparring[currentKey].noHpB = phone;
+                    globalCache.sparring[currentKey].noHpB = noHpBBersih;
                     globalCache.sparring[currentKey].matchedAt = Date.now();
                 }
 
@@ -8195,6 +8221,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if(event.key === 'Escape') closeModal();
         });
+
+        document.getElementById('customer-sparring-team-phone').addEventListener('keydown', (event) => {
+            if(event.key === 'Enter'){
+                event.preventDefault();
+                document.getElementById('customer-sparring-modal-save').click();
+            }
+            if(event.key === 'Escape') closeModal();
+        });
     }
 
     modal.dataset.key = key;
@@ -8206,6 +8240,8 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = '';
         setTimeout(() => input.focus(), 80);
     }
+    const phoneInput = document.getElementById('customer-sparring-team-phone');
+    if(phoneInput) phoneInput.value = '';
 };
 
         window.escapeHtmlCustomerSparring = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
@@ -16983,19 +17019,23 @@ main {
 
 <style id="v30-booking-true-overlap-hide">
 @media (max-width:640px){
-  /* V30: gunakan mekanisme potong V29 untuk Booking.
-     Header tetap tanpa frame tambahan. Hanya bagian card Booking yang
-     masuk ke area header yang benar-benar di-hide secara responsif. */
   body.booking-v30-active > header{
     position:sticky !important;
     top:0 !important;
     z-index:100 !important;
   }
-  body.booking-v30-active #page-customer-booking .booking-glass-card,
-  body.booking-v30-active #page-customer-booking .booking-date-card,
-  body.booking-v30-active #page-customer-booking .booking-sparing-card,
+  /* V30: gunakan mekanisme potong V29 untuk Booking.
+     Header tetap tanpa frame tambahan. Sejak field dikelompokkan
+     menjadi 3 kartu besar (Jadwal/Data pemesan/Pembayaran), yang
+     dipotong rapi harus KARTU KELOMPOK itu sendiri (.booking-group-card)
+     sebagai satu kesatuan bulat, bukan lagi baris per baris di
+     dalamnya — supaya sudut membulat ikut terpotong senada dengan
+     header, dan isi di dalamnya tidak lagi terpotong sendiri-sendiri
+     secara acak. */
+  body.booking-v30-active #page-customer-booking .booking-group-card,
+  body.booking-v30-active #page-customer-booking .customer-booking-selected-price,
   body.booking-v30-active #page-customer-booking .customer-payment-info,
-  body.booking-v30-active #page-customer-booking .booking-submit-wrap{
+  body.booking-v30-active #page-customer-booking .booking-submit-btn{
     position:relative !important;
     z-index:1 !important;
     clip-path: inset(var(--booking-hide-top, 0px) 0 0 0 round 0px) !important;
@@ -17010,7 +17050,7 @@ main {
   function mobile(){ return window.innerWidth<=MAX; }
   function getBookingCards(page){
     return page.querySelectorAll(
-      '.booking-glass-card, .booking-date-card, .booking-sparing-card, .customer-payment-info, .booking-submit-wrap'
+      '.booking-group-card, .customer-booking-selected-price, .customer-payment-info, .booking-submit-btn'
     );
   }
   function update(){
@@ -26981,7 +27021,7 @@ main {
   ) !important;
   border: 1px solid rgba(255,255,255,.86) !important;
   box-shadow:
-      0 18px 48px rgba(2,6,23,.25),
+      0 8px 20px rgba(2,6,23,.10),
       inset 0 1px 0 rgba(255,255,255,.92),
       inset 0 -1px 0 rgba(255,255,255,.28) !important;
   -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
@@ -26997,5 +27037,159 @@ main {
 #page-customer-booking#page-customer-booking#page-customer-booking#page-customer-booking .booking-field-stack > .booking-flat-control {
   background: rgba(255,255,255,.55) !important;
   border-color: rgba(255,255,255,.9) !important;
+}
+</style>
+
+<!-- ===================================================================
+     PATCH TAMBAHAN — JADWAL: PERIODE JADWAL DIBUAT TERLIHAT JELAS
+     BISA DIKLIK.
+     Sebelumnya teks "Periode ... s.d ..." tampil polos rata tengah
+     tanpa bingkai/ikon apa pun (lihat patch V138 di atas yang sengaja
+     menghapus kotak kacanya), sehingga customer mengira itu cuma
+     judul/informasi biasa, bukan tombol pilihan.
+     Di sini HANYA tombol trigger-nya (.schedule-period-custom-trigger)
+     yang diberi tampilan pil: ikon kalender + panah bawah, warna &
+     bingkai biru, serta animasi "berkedip" halus dan terus-menerus
+     supaya sekali lihat langsung terlihat bisa disentuh/diganti.
+     Wadah luar (.customer-schedule-period-control) sengaja TIDAK
+     disentuh lagi supaya tidak mengulang bingkai kaca besar yang
+     sebelumnya sudah dihapus.
+     =================================================================== -->
+<style id="schedule-period-visible-affordance-v1">
+#page-customer-schedule .schedule-period-custom-trigger,
+#page-booking-schedule .schedule-period-custom-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  padding: 8px 16px !important;
+  background: linear-gradient(135deg,#eff6ff,#dbeafe) !important;
+  border: 1.5px solid #93c5fd !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 14px rgba(37,99,235,.20) !important;
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+  animation: schedule-period-affordance-pulse 2.4s ease-in-out infinite !important;
+}
+#page-customer-schedule .schedule-period-custom-trigger::before,
+#page-booking-schedule .schedule-period-custom-trigger::before {
+  content: "\1F4C5" !important;
+  font-size: .85em !important;
+  line-height: 1 !important;
+  -webkit-text-fill-color: initial !important;
+}
+#page-customer-schedule .schedule-period-custom-trigger::after,
+#page-booking-schedule .schedule-period-custom-trigger::after {
+  content: "\25BE" !important;
+  font-size: 1.05em !important;
+  line-height: 1 !important;
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8 !important;
+}
+#page-customer-schedule .schedule-period-custom-trigger:active,
+#page-booking-schedule .schedule-period-custom-trigger:active {
+  transform: scale(.97) !important;
+}
+@keyframes schedule-period-affordance-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(37,99,235,.20);
+    border-color: #93c5fd;
+  }
+  50% {
+    box-shadow: 0 4px 22px rgba(37,99,235,.45);
+    border-color: #2563eb;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #page-customer-schedule .schedule-period-custom-trigger,
+  #page-booking-schedule .schedule-period-custom-trigger {
+    animation: none !important;
+  }
+}
+</style>
+
+<!-- ===================================================================
+     PATCH TAMBAHAN — POPUP PILIHAN (Periode Jadwal, Jam, DP, Metode,
+     dsb): SEMBUNYIKAN SCROLLBAR TAPI TETAP BISA DISCROLL.
+     Daftar pilihan (.booking-choice-list) selama ini bisa discroll,
+     tapi scrollbar bawaan browser ikut tampil di sisi kanan sehingga
+     terlihat kurang bersih. Di sini scrollbar-nya disembunyikan
+     (Chrome/Safari/Edge lewat ::-webkit-scrollbar, Firefox lewat
+     scrollbar-width, & standar CSS scrollbar-width/-color) tanpa
+     mematikan kemampuan scroll itu sendiri — overflow:auto pada
+     .booking-choice-list tidak diubah.
+     =================================================================== -->
+<style id="booking-choice-list-hide-scrollbar-v1">
+#booking-choice-modal .booking-choice-list {
+  scrollbar-width: none !important;      /* Firefox */
+  -ms-overflow-style: none !important;   /* IE / lama Edge */
+}
+#booking-choice-modal .booking-choice-list::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;              /* Chrome, Safari, Edge (Chromium) */
+}
+</style>
+
+<!-- ===================================================================
+     PATCH TAMBAHAN — HALAMAN JADWAL (CUSTOMER): SAMAKAN TEMA KACA
+     TABEL JADWAL & KOTAK KETERANGAN DENGAN HEADER + DOCK BAR.
+     Sebelumnya #booking-schedule-grid-wrap (bingkai tabel) dan
+     .schedule-legend (kotak "Keterangan") memakai putih hampir solid
+     (rgba .92) dengan sudut rounded-xl/rounded-2xl bawaan Tailwind,
+     berbeda dari header biru & dock bar bawah yang sudah pakai resep
+     kaca (gradient transparan + blur + saturate + sudut 20-28px).
+     Di sini keduanya diseragamkan memakai resep yang sama persis
+     dengan dock bar, sudut dibulatkan ke 20px senada header.
+     Isi di dalamnya (tabel jadwal, chip Member/Non-Member) SENGAJA
+     dibiarkan solid/opaque agar teks & jadwal tetap mudah dibaca di
+     atas kaca — sama seperti perlakuan pada kotak input Nama Tim /
+     WhatsApp di halaman Booking.
+     =================================================================== -->
+<style id="schedule-grid-legend-liquid-glass-v1">
+#page-customer-schedule #booking-schedule-grid-wrap,
+#page-booking-schedule #booking-schedule-grid-wrap {
+  background: linear-gradient(
+      135deg,
+      rgba(255,255,255,.68),
+      rgba(231,242,255,.48)
+  ) !important;
+  border: 1px solid rgba(255,255,255,.86) !important;
+  border-radius: 20px !important;
+  box-shadow:
+      0 8px 20px rgba(2,6,23,.10),
+      inset 0 1px 0 rgba(255,255,255,.92),
+      inset 0 -1px 0 rgba(255,255,255,.28) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
+  backdrop-filter: blur(28px) saturate(155%) !important;
+}
+#page-customer-schedule .schedule-legend,
+#page-booking-schedule .schedule-legend {
+  background: linear-gradient(
+      135deg,
+      rgba(255,255,255,.68),
+      rgba(231,242,255,.48)
+  ) !important;
+  border: 1px solid rgba(255,255,255,.86) !important;
+  border-radius: 20px !important;
+  box-shadow:
+      0 8px 20px rgba(2,6,23,.10),
+      inset 0 1px 0 rgba(255,255,255,.92),
+      inset 0 -1px 0 rgba(255,255,255,.28) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
+  backdrop-filter: blur(28px) saturate(155%) !important;
+}
+/* Tabel & chip nama tim tetap solid supaya tetap mudah dibaca. */
+#page-customer-schedule #booking-schedule-grid-wrap table,
+#page-booking-schedule #booking-schedule-grid-wrap table {
+  background: #ffffff !important;
+}
+/* Chip "Member" / "Non-Member" pada kotak Keterangan tetap solid. */
+#page-customer-schedule .schedule-legend-item,
+#page-booking-schedule .schedule-legend-item {
+  background: rgba(255,255,255,.85) !important;
 }
 </style>
