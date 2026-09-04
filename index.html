@@ -5948,6 +5948,31 @@ body:has(#page-customer-member:not(.hidden)) > header{
 #sparing-data-loader-percent{margin-top:9px;color:rgba(255,255,255,.82);font-size:.68rem;font-weight:800;letter-spacing:.04em}
 </style>
 
+<style id="booking-data-loader-style">
+#booking-data-loader{
+  position:fixed!important;inset:0!important;z-index:1000001!important;
+  display:flex;align-items:center;justify-content:center;padding:22px;
+  background:linear-gradient(135deg,rgba(8,61,122,.92),rgba(15,23,42,.96));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .28s ease,visibility .28s ease;
+}
+#booking-data-loader.is-visible{opacity:1;visibility:visible;pointer-events:auto}
+#booking-data-loader-card{
+  width:min(390px,92vw);box-sizing:border-box;text-align:center;
+  padding:30px 26px 26px;border-radius:28px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22);
+  backdrop-filter:blur(24px) saturate(140%);-webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+#booking-data-loader-logo{width:112px;height:112px;object-fit:contain;display:block;margin:0 auto 16px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.22))}
+#booking-data-loader-title{margin:0;color:#fff;font-size:clamp(1rem,4.8vw,1.35rem);font-weight:950;letter-spacing:.045em;line-height:1.2}
+#booking-data-loader-subtitle{margin:7px 0 22px;color:rgba(255,255,255,.76);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+#booking-data-loader-progress{height:10px;width:100%;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 3px rgba(0,0,0,.18)}
+#booking-data-loader-progress-bar{height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,#fff,#93c5fd);box-shadow:0 0 18px rgba(147,197,253,.55);transition:width .16s ease}
+#booking-data-loader-percent{margin-top:9px;color:rgba(255,255,255,.82);font-size:.68rem;font-weight:800;letter-spacing:.04em}
+</style>
+
 <style id="sandaga-startup-loader-style">
 #sandaga-startup-loader{
   position:fixed!important;inset:0!important;z-index:1000000!important;
@@ -6277,6 +6302,19 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
       <div id="sparing-data-loader-progress-bar"></div>
     </div>
     <div id="sparing-data-loader-percent">0%</div>
+  </div>
+</div>
+
+<!-- LOADING DATA BOOKING (dipakai saat menu Booking pertama kali dibuka) -->
+<div id="booking-data-loader" aria-label="Memuat data booking">
+  <div id="booking-data-loader-card">
+    <img id="booking-data-loader-logo" src="logo.png" alt="Sandaga Minisoccer 2" />
+    <h2 id="booking-data-loader-title">BOOKING</h2>
+    <p id="booking-data-loader-subtitle">Mengambil data jadwal...</p>
+    <div id="booking-data-loader-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="booking-data-loader-progress-bar"></div>
+    </div>
+    <div id="booking-data-loader-percent">0%</div>
   </div>
 </div>
 
@@ -7290,6 +7328,64 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
             }
         }
 
+        // Loader data BOOKING: memakai flag siap yang sama dengan halaman Jadwal
+        // (customerScheduleMemberDataReady & customerScheduleBookingDataReady),
+        // supaya begitu menu Booking dibuka pertama kali dan data belum sampai,
+        // customer melihat loading yang jelas (sama seperti di halaman Sparing/Jadwal)
+        // alih-alih dropdown jam yang diam-diam kosong/salah.
+        let customerBookingLoaderTimer = null;
+        let customerBookingLoaderValue = 0;
+
+        function showCustomerBookingLoader(){
+            const loader=document.getElementById('booking-data-loader');
+            const bar=document.getElementById('booking-data-loader-progress-bar');
+            const pct=document.getElementById('booking-data-loader-percent');
+            if(!loader||!bar||!pct) return;
+            clearInterval(customerBookingLoaderTimer);
+            customerBookingLoaderValue=0;
+            bar.style.width='0%'; pct.textContent='0%';
+            bar.parentElement.setAttribute('aria-valuenow','0');
+            loader.classList.add('is-visible');
+            customerBookingLoaderTimer=setInterval(()=>{
+                if(customerBookingLoaderValue<88){
+                    customerBookingLoaderValue=Math.min(
+                        88,
+                        customerBookingLoaderValue+(customerBookingLoaderValue<55?3:1)
+                    );
+                    bar.style.width=customerBookingLoaderValue+'%';
+                    pct.textContent=Math.round(customerBookingLoaderValue)+'%';
+                    bar.parentElement.setAttribute('aria-valuenow',Math.round(customerBookingLoaderValue));
+                }
+                if(customerBookingLoaderValue>=88 &&
+                   !(customerScheduleMemberDataReady && customerScheduleBookingDataReady)){
+                    const subtitle=document.getElementById('booking-data-loader-subtitle');
+                    if(subtitle){
+                        subtitle.textContent='KONEKSI JARINGAN ANDA SEDANG LAMBAT, MOHON TUNGGU SEBENTAR';
+                    }
+                }
+            },70);
+        }
+
+        function hideCustomerBookingLoader(){
+            const loader=document.getElementById('booking-data-loader');
+            const bar=document.getElementById('booking-data-loader-progress-bar');
+            const pct=document.getElementById('booking-data-loader-percent');
+            if(!loader||!bar||!pct) return;
+            clearInterval(customerBookingLoaderTimer);
+            customerBookingLoaderTimer=null;
+            const subtitle=document.getElementById('booking-data-loader-subtitle');
+            if(subtitle) subtitle.textContent='Mengambil data jadwal...';
+            bar.style.width='100%'; pct.textContent='100%';
+            bar.parentElement.setAttribute('aria-valuenow','100');
+            setTimeout(()=>loader.classList.remove('is-visible'),220);
+        }
+
+        function maybeHideCustomerBookingLoader(){
+            if(customerScheduleMemberDataReady && customerScheduleBookingDataReady){
+                hideCustomerBookingLoader();
+            }
+        }
+
         // Status data SPARING: loader hanya muncul jika data Firebase belum siap saat menu dibuka.
         let customerSparringDataReady = false;
         let customerSparringLoaderTimer = null;
@@ -7373,7 +7469,21 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
             if(id === 'masuk') updateDropdownTimMasuk();
             if(id === 'monthly-recap') renderMonthlyRecap();
             if(id === 'customer-booking') { window.adminSessionActive = false; setDefaultDates(); }
-            if(id === 'customer-booking') { setDefaultDates(); loadJamKosongCustomer(); updateCustomerSelectedPrice(); }
+            if(id === 'customer-booking') {
+                setDefaultDates(); loadJamKosongCustomer(); updateCustomerSelectedPrice();
+
+                // Sama seperti halaman Sparing/Jadwal: kalau data MEMBER & BOOKING
+                // dari Firebase belum sampai saat menu Booking dibuka, tampilkan
+                // loading full-screen dulu supaya customer tidak melihat jam yang
+                // belum tentu valid. Begitu data siap, loader hilang otomatis
+                // (lihat maybeHideCustomerBookingLoader() yang dipanggil dari
+                // listener onValue member/booking).
+                if(!(customerScheduleMemberDataReady && customerScheduleBookingDataReady)){
+                    showCustomerBookingLoader();
+                } else {
+                    hideCustomerBookingLoader();
+                }
+            }
             if(id === 'customer-price') { updateCustomerSelectedPrice(); }
             if(id === 'customer-schedule') {
                 showCustomerScheduleLoader();
@@ -7677,10 +7787,33 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
             const selectJam = document.getElementById('cust-jam');
             if(!selectJam) return;
 
+            const jamTrigger = document.getElementById('cust-jam-trigger');
+
             selectJam.innerHTML = `<option value="">-- Pilih Jam --</option>`;
+            selectJam.disabled = false;
+            if(jamTrigger){ jamTrigger.disabled = false; jamTrigger.classList.remove('is-loading'); }
             window.__customerAvailableHours = new Set();
 
             if(!tglInput) {
+                updateCustomerDurationOptions();
+                updateCustomerSelectedPrice();
+                return;
+            }
+
+            // Jangan tampilkan status "Kosong" sebelum data MEMBER & BOOKING
+            // benar-benar sudah diterima dari Firebase. Kalau ini diabaikan,
+            // jam yang sebenarnya sudah terisi bisa sempat terlihat kosong
+            // (karena globalCache masih {} saat pertama kali halaman dibuka),
+            // sehingga customer bisa salah pilih jam yang sudah dibooking.
+            const bookingDataReady = customerScheduleMemberDataReady && customerScheduleBookingDataReady;
+            if(!bookingDataReady) {
+                selectJam.innerHTML = `<option value="">-- Memuat data jadwal, mohon tunggu --</option>`;
+                selectJam.disabled = true;
+                if(jamTrigger){
+                    jamTrigger.disabled = true;
+                    jamTrigger.classList.add('is-loading');
+                    jamTrigger.textContent = 'Memuat jadwal...';
+                }
                 updateCustomerDurationOptions();
                 updateCustomerSelectedPrice();
                 return;
@@ -8886,6 +9019,7 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             renderCustomerMember();
             customerScheduleMemberDataReady = true;
             maybeHideCustomerScheduleLoader();
+            maybeHideCustomerBookingLoader();
         });
 
         // Sinkronkan member tanpa jadwal tetap jika fitur tersebut menyimpan
@@ -8921,6 +9055,7 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             customerScheduleBookingDataReady = true;
             renderAll();
             maybeHideCustomerScheduleLoader();
+            maybeHideCustomerBookingLoader();
         });
 
         // Dipersempit: hanya ambil data sparring dengan tanggal >= hari ini
@@ -11808,6 +11943,10 @@ body.booking-success-open{overflow:hidden;}
 #page-customer-booking .booking-choice-trigger:hover,
 #page-customer-booking .booking-choice-trigger:focus {
   background:transparent !important; box-shadow:none !important; transform:none !important;
+}
+#page-customer-booking .booking-choice-trigger:disabled,
+#page-customer-booking .booking-choice-trigger.is-loading {
+  cursor:not-allowed !important; opacity:.55 !important;
 }
 .booking-choice-modal {
   position:fixed; inset:0; z-index:100000; display:none; align-items:center; justify-content:center;
