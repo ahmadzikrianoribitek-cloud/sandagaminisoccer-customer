@@ -7073,7 +7073,7 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
 <!-- Script Firebase & Logika Aplikasi -->
 <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, push, update, remove, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, push, update, remove, onValue, query, orderByChild, startAt } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDO6gVCRzTClDEwAS2FAWZVf-pB5CG2Pbc",
@@ -8923,7 +8923,12 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             maybeHideCustomerScheduleLoader();
         });
 
-        onValue(ref(db, 'sparring'), (snapshot) => {
+        // Dipersempit: hanya ambil data sparring dengan tanggal >= hari ini
+        // (yang masih aktif/mencari lawan atau jadwal mendatang). Histori
+        // tanggal lampau tidak lagi ikut terunduh, supaya loading customer
+        // tidak perlu menunggu seluruh data lama yang sudah menumpuk.
+        const sparringQueryTodayOnwards = query(ref(db, 'sparring'), orderByChild('tanggal'), startAt(getLocalDateString()));
+        onValue(sparringQueryTodayOnwards, (snapshot) => {
             globalCache.sparring = snapshot.val() || {};
             customerSparringDataReady = true;
             renderCustomerSparring();
@@ -13827,7 +13832,7 @@ body:has(#page-customer-member:not(.hidden)) #customer-bottom-nav{visibility:vis
     #page-customer-sparring .sparing-final-subtitle {font-size:.51rem !important;}
 }
 </style>
-</body>
+
 <style id="customer-home-desktop-buttons-final">
 /* DESKTOP: tombol menu utama dibuat lebih besar dan lebih mudah diklik.
    HP tidak disentuh oleh aturan ini. */
@@ -14799,7 +14804,7 @@ body {
   window.addEventListener('load',boot);
 })();
 </script>
-</html><style id="home-mobile-vertical-buttons-v16">
+<style id="home-mobile-vertical-buttons-v16">
 @media (max-width: 640px){
   /* Hanya halaman awal: desktop tidak tersentuh */
   #page-home .customer-image-menu{
@@ -27193,3 +27198,4 @@ main {
   background: rgba(255,255,255,.85) !important;
 }
 </style>
+</body></html>
