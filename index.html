@@ -9050,7 +9050,17 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             renderCustomerMember();
         });
 
-        onValue(ref(db, 'booking'), (snapshot) => {
+        // Dipersempit: tahap pertama hanya ambil booking dengan tgl >= hari ini
+        // (yang masih relevan untuk jadwal & halaman booking customer). Ini
+        // membuat loader jadwal/booking customer bisa langsung hilang tanpa
+        // menunggu seluruh riwayat booking lama yang terus menumpuk.
+        // Riwayat lengkap tetap diambil, tapi belakangan di latar belakang
+        // (lihat bookingFullHistoryLoaded di bawah), khusus untuk kebutuhan
+        // tabel "Riwayat Booking" & rekap admin di tanggal lampau.
+        let bookingFullHistoryLoaded = false;
+        const bookingQueryTodayOnwards = query(ref(db, 'booking'), orderByChild('tgl'), startAt(getLocalDateString()));
+        onValue(bookingQueryTodayOnwards, (snapshot) => {
+            if(bookingFullHistoryLoaded) return; // riwayat lengkap sudah mengambil alih, jangan ditimpa subset ini
             globalCache.booking = snapshot.val() || {};
             customerScheduleBookingDataReady = true;
             renderAll();
@@ -9070,9 +9080,24 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             hideCustomerSparringLoader();
         });
 
-        onValue(ref(db, 'pemasukan'), (snapshot) => { globalCache.pemasukan = snapshot.val() || {}; renderRekapHarian(); renderMonthlyRecap(); });
-        onValue(ref(db, 'minuman'), (snapshot) => { globalCache.minuman = snapshot.val() || {}; renderRekapHarian(); });
-        onValue(ref(db, 'pengeluaran'), (snapshot) => { globalCache.pengeluaran = snapshot.val() || {}; renderRekapHarian(); });
+        // Data untuk rekap admin (riwayat booking lengkap, pemasukan, minuman,
+        // pengeluaran) ditunda pengambilannya beberapa saat supaya tidak
+        // berebut bandwidth dengan data kritikal (member, booking hari ini,
+        // sparring) yang perlu tampil duluan. Berjalan otomatis di latar
+        // belakang begitu halaman sudah selesai render bagian pentingnya.
+        setTimeout(() => {
+            onValue(ref(db, 'booking'), (snapshot) => {
+                globalCache.booking = snapshot.val() || {};
+                bookingFullHistoryLoaded = true;
+                customerScheduleBookingDataReady = true;
+                renderAll();
+                maybeHideCustomerScheduleLoader();
+                maybeHideCustomerBookingLoader();
+            });
+            onValue(ref(db, 'pemasukan'), (snapshot) => { globalCache.pemasukan = snapshot.val() || {}; renderRekapHarian(); renderMonthlyRecap(); });
+            onValue(ref(db, 'minuman'), (snapshot) => { globalCache.minuman = snapshot.val() || {}; renderRekapHarian(); });
+            onValue(ref(db, 'pengeluaran'), (snapshot) => { globalCache.pengeluaran = snapshot.val() || {}; renderRekapHarian(); });
+        }, 1500);
 
         function isMemberActiveOnDate(member, dateStr) {
             if(!member || !dateStr) return false;
