@@ -8559,15 +8559,20 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             renderCustomerMember();
         });
 
-        // Dipersempit: tahap pertama hanya ambil booking dengan tgl >= hari ini
-        // (yang masih relevan untuk jadwal & halaman booking customer). Ini
-        // membuat loader jadwal/booking customer bisa langsung hilang tanpa
-        // menunggu seluruh riwayat booking lama yang terus menumpuk.
-        // Riwayat lengkap tetap diambil, tapi belakangan di latar belakang
-        // (lihat bookingFullHistoryLoaded di bawah), khusus untuk kebutuhan
-        // tabel "Riwayat Booking" & rekap admin di tanggal lampau.
+        // Dipersempit: hanya ambil booking dengan tgl >= tanggal 1 bulan berjalan
+        // (bukan cuma "hari ini"). Ini tetap membuat loader jadwal/booking
+        // customer cepat hilang tanpa menunggu seluruh riwayat booking lama
+        // yang terus menumpuk, TAPI tanggal-tanggal di awal bulan ini yang
+        // sudah lewat tetap ikut terunduh — supaya tabel Jadwal (yang masih
+        // menampilkan sisa minggu bulan berjalan) tetap bisa menampilkan
+        // booking NON-MEMBER di hari-hari sebelumnya, bukan cuma data MEMBER
+        // (jadwal member memang selalu tampil karena berasal dari jadwal
+        // mingguan tetap, bukan dari node 'booking' per-tanggal ini).
+        function getLocalMonthStartString(date = new Date()) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+        }
         let bookingFullHistoryLoaded = false;
-        const bookingQueryTodayOnwards = query(ref(db, 'booking'), orderByChild('tgl'), startAt(getLocalDateString()));
+        const bookingQueryTodayOnwards = query(ref(db, 'booking'), orderByChild('tgl'), startAt(getLocalMonthStartString()));
         onValue(bookingQueryTodayOnwards, (snapshot) => {
             if(bookingFullHistoryLoaded) return; // riwayat lengkap sudah mengambil alih, jangan ditimpa subset ini
             globalCache.booking = snapshot.val() || {};
