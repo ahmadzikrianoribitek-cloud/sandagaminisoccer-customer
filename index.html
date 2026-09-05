@@ -7495,6 +7495,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
         window.salinRekeningCustomer = async () => { const nomor='7340198877'; try { await navigator.clipboard.writeText(nomor); alert('Nomor rekening berhasil disalin: '+nomor); } catch(e) { alert('Nomor rekening: '+nomor); } };
+
+        // ================= FIX: klik di seluruh baris (termasuk teks label) buka popup yang sama =================
+        // Baris Status / Nominal DP / Metode Pembayaran / Cari Lawan Sparing memakai tombol
+        // ".booking-secondary-final-trigger", sedangkan baris Tanggal main / Jam main / Durasi
+        // memakai tombol ".booking-choice-trigger" (dibuat oleh script v35/HTML). Kedua jenis
+        // tombol itu hanya menutupi sisi kanan baris, jadi klik di teks label (sisi kiri) tidak
+        // memicu apa pun. Fix ini membuat klik di mana pun pada kartu baris tsb otomatis
+        // mengklik tombol trigger yang sama, supaya hasilnya SELALU popup yang sama,
+        // baik dari klik kiri maupun kanan.
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('#page-customer-booking .booking-glass-card').forEach((card) => {
+                const trigger = card.querySelector('.booking-secondary-final-trigger, .booking-choice-trigger');
+                if (!trigger) return;
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', (e) => {
+                    // Jika yang diklik memang tombol trigger itu sendiri, biarkan berjalan normal
+                    // (jangan diklik dua kali / jangan ganggu event aslinya).
+                    if (e.target === trigger || trigger.contains(e.target)) return;
+                    e.preventDefault();
+                    trigger.click();
+                });
+            });
+        });
         document.addEventListener('DOMContentLoaded',()=>{updateCustomerDpOptions(); const metode=document.getElementById('cust-metode'); if(metode){metode.addEventListener('change',updateCustomerPaymentInfo);updateCustomerPaymentInfo();}});
 
         // ================= SPARING: RENDER 2 SECTION (VERSI TUNGGAL & FINAL) =================
