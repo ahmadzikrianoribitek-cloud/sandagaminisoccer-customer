@@ -8876,13 +8876,51 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
                             bgClass='bg-rose-50 border border-rose-200 text-slate-900 font-black shadow-inner text-center';
                         }
                     }
-                    tr += `<td class="p-0.5 sm:p-1 ${bgClass} align-middle h-7 sm:h-14 overflow-hidden text-center relative"><div class="flex items-center justify-center h-full text-[6px] sm:text-[10px] text-center leading-tight line-clamp-2 font-black relative z-[2]">${textVal}</div>${hariSudahLewat?`<div class="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-1/2 bg-blue-400/90 text-white pointer-events-none z-[3] flex items-center justify-center overflow-hidden"><span class="font-black text-[7px] sm:text-[10px] leading-none whitespace-nowrap tracking-wide" style="transform:rotate(-90deg);transform-origin:center;">• DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE • DONE •</span></div>`:''}</td>`;
+                    tr += `<td data-date="${day.dateStr}" class="p-0.5 sm:p-1 ${bgClass} align-middle h-7 sm:h-14 overflow-hidden text-center relative"><div class="flex items-center justify-center h-full text-[6px] sm:text-[10px] text-center leading-tight line-clamp-2 font-black relative z-[2]">${textVal}</div></td>`;
                 });
 
                 tr += '</tr>';
                 tbody.insertAdjacentHTML('beforeend',tr);
             });
             wrap.appendChild(tableWrap);
+
+            // Strip "DONE" dibuat sebagai SATU lapisan utuh per kolom hari yang
+            // sudah lewat (bukan per-sel seperti sebelumnya). Dengan begitu di
+            // layar besar teksnya tidak lagi terputus/dobel di setiap baris,
+            // karena hanya ada satu strip yang membentang dari baris pertama
+            // sampai baris terakhir kolom tersebut. Posisi & tinggi dihitung
+            // dari ukuran tabel yang sebenarnya, jadi otomatis presisi di HP
+            // maupun layar besar, dan dihitung ulang saat ukuran layar berubah.
+            const renderDoneOverlays = () => {
+                tableWrap.querySelectorAll('.schedule-grid-done-overlay').forEach(el => el.remove());
+                const wrapRect = tableWrap.getBoundingClientRect();
+                const tbodyRect = tbody.getBoundingClientRect();
+                if(!tbodyRect.height) return;
+                weekDates.forEach((day,dayIdx) => {
+                    if(inactiveIndices.includes(dayIdx)) return;
+                    const activeDate = isActiveDate(day.dateStr);
+                    const hariSudahLewat = activeDate && day.date < nowTime;
+                    if(!hariSudahLewat) return;
+                    const sampleCell = tbody.querySelector(`td[data-date="${day.dateStr}"]`);
+                    if(!sampleCell) return;
+                    const cellRect = sampleCell.getBoundingClientRect();
+                    const overlay = document.createElement('div');
+                    overlay.className = 'schedule-grid-done-overlay absolute bg-blue-400/90 text-white pointer-events-none z-[3] flex items-center justify-center overflow-hidden';
+                    overlay.style.left = `${(cellRect.left - wrapRect.left) + cellRect.width*0.25}px`;
+                    overlay.style.width = `${cellRect.width*0.5}px`;
+                    overlay.style.top = `${tbodyRect.top - wrapRect.top}px`;
+                    overlay.style.height = `${tbodyRect.height}px`;
+                    overlay.innerHTML = `<span class="schedule-grid-done-overlay-text font-black text-[7px] sm:text-[10px] leading-none whitespace-nowrap tracking-wide" style="transform:rotate(-90deg);transform-origin:center;">${'• DONE '.repeat(80)}•</span>`;
+                    tableWrap.appendChild(overlay);
+                });
+            };
+
+            if(window.__scheduleDoneOverlayHandler) {
+                window.removeEventListener('resize', window.__scheduleDoneOverlayHandler);
+            }
+            window.__scheduleDoneOverlayHandler = renderDoneOverlays;
+            window.addEventListener('resize', window.__scheduleDoneOverlayHandler);
+            requestAnimationFrame(renderDoneOverlays);
         };
         window.renderGridJadwal = () => {
             let gridTbody = document.getElementById('grid-jadwal-gabung');
