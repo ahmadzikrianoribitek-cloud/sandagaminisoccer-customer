@@ -7770,8 +7770,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('customer-sparring-modal-save').addEventListener('click', async (event) => {
             event.preventDefault();
             event.stopPropagation();
-            const currentKey = modal.dataset.key || '';
-            const currentPhone = modal.dataset.phone || '';
+            const currentKey = modal.dataset.sparringKey || '';
+            const currentPhone = modal.dataset.sparringPhone || '';
             const currentItem = (globalCache.sparring || {})[currentKey];
 
             const input = document.getElementById('customer-sparring-team-name');
@@ -7880,23 +7880,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('customer-sparring-team-name').addEventListener('keydown', (event) => {
             if(event.key === 'Enter'){
+                // Jangan langsung konfirmasi/lempar ke WA saat menekan Enter.
+                // Cukup pindahkan fokus ke kolom Nomor WhatsApp.
                 event.preventDefault();
-                document.getElementById('customer-sparring-modal-save').click();
+                document.getElementById('customer-sparring-team-phone')?.focus();
             }
             if(event.key === 'Escape') closeModal();
         });
 
         document.getElementById('customer-sparring-team-phone').addEventListener('keydown', (event) => {
             if(event.key === 'Enter'){
+                // Mencegah submit otomatis saat menekan tombol "Selesai/Go" di keyboard HP.
+                // WhatsApp hanya boleh terbuka setelah tombol "Konfirmasi ke Tim" diklik.
                 event.preventDefault();
-                document.getElementById('customer-sparring-modal-save').click();
+                event.target.blur();
             }
             if(event.key === 'Escape') closeModal();
         });
     }
 
-    modal.dataset.key = key;
-    modal.dataset.phone = rawPhone || item.noHp || '';
+    // PENTING: jangan pakai nama atribut "data-phone" / "data-wa" di sini.
+    // Ada listener klik global (untuk tombol "Hubungi" di kartu jadwal) yang
+    // membuka WhatsApp otomatis untuk elemen APAPUN yang memiliki atribut
+    // data-phone/data-wa, termasuk elemen leluhur dari yang diklik. Karena
+    // modal ini membungkus input Nama Tim & Nomor WA, memakai data-phone di
+    // sini menyebabkan WhatsApp langsung terbuka begitu pengguna menyentuh
+    // input di dalam modal — sebelum tombol "Konfirmasi ke Tim" diklik.
+    modal.dataset.sparringKey = key;
+    modal.dataset.sparringPhone = rawPhone || item.noHp || '';
     modal.classList.add('is-open');
 
     const input = document.getElementById('customer-sparring-team-name');
