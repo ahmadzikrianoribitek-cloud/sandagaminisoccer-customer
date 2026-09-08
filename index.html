@@ -8005,6 +8005,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: statusVal,
                 nama: namaTim,
                 noHp,
+                wa: noHp, // penting: web admin membaca field "wa" untuk nomor WhatsApp booking
                 tgl: gabungTglJam,
                 durasi: durasi,
                 jamSelesai: bookingHours[bookingHours.length - 1],
@@ -8036,6 +8037,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             timA: namaTim,
                             timB: '',
                             noHp,
+                            wa: noHp, // alias supaya web admin (baca field "wa") ikut menerima nomor WhatsApp
                             status: 'pending',
                             catatan: `Permintaan lawan sparring dari booking customer. No. HP: ${noHp}`,
                             timestamp: Date.now()
