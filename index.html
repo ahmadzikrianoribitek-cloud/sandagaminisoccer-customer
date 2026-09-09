@@ -5716,6 +5716,10 @@ body::before {
 .customer-member-logo{width:108px;height:108px;border-radius:28px;background:#fff;border:1px solid #dbeafe;box-shadow:0 10px 22px rgba(15,23,42,.09);display:grid;place-items:center;overflow:hidden;padding:10px;box-sizing:border-box}
 .customer-member-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .customer-member-logo-fallback{width:100%;height:100%;display:grid;place-items:center;border-radius:20px;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#fff;font-size:1.55rem;font-weight:950;letter-spacing:.04em}
+/* Logo yang baru selesai diunduh (satu-per-satu) muncul dengan transisi
+   halus, bukan langsung "kedip" menimpa inisial. */
+.customer-member-logo-fade{opacity:0;transform:scale(.92);transition:opacity .35s ease, transform .35s ease}
+.customer-member-logo-fade.is-visible{opacity:1;transform:scale(1)}
 .customer-member-name{text-align:center;color:#13224f;font-size:.86rem;font-weight:950;line-height:1.25;word-break:break-word}
 .customer-member-empty{grid-column:1/-1;padding:28px 18px;border-radius:20px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.9);color:#64748b;text-align:center;font-size:.75rem;font-weight:800}
 @media(max-width:800px){.customer-member-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.customer-member-logo{width:92px;height:92px}.customer-member-page-head{padding:16px}.customer-member-page-head p{font-size:.62rem}}
@@ -6640,7 +6644,7 @@ body:has(#page-customer-schedule:not(.hidden)) > header{
 <!-- Script Firebase & Logika Aplikasi -->
 <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, push, update, remove, onValue, query, orderByChild, startAt } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, push, update, remove, onValue, get, query, orderByChild, startAt } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDO6gVCRzTClDEwAS2FAWZVf-pB5CG2Pbc",
@@ -7535,7 +7539,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return dataUrl(f?.logo);
           }
           function initials(n){return esc(String(n||'TM').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'TM');}
-          function logoHtml(name,itemLogo){const logo=getLogo(name,itemLogo), safe=esc(name||'Tim'); if(logo)return `<div class="sparing-final-logo"><img src="${esc(logo)}" alt="Logo ${safe}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="sparing-final-logo-fallback" style="display:none">${initials(name)}</span></div>`;return `<div class="sparing-final-logo"><span class="sparing-final-logo-fallback">${initials(name)}</span></div>`;}
+          function logoHtml(name,itemLogo){
+            const safe=esc(name||'Tim');
+            const logo=getLogo(name,itemLogo);
+            if(logo)return `<div class="sparing-final-logo"><img src="${esc(logo)}" alt="Logo ${safe}" loading="lazy" class="customer-member-logo-fade is-visible" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="sparing-final-logo-fallback" style="display:none">${initials(name)}</span></div>`;
+            // Logo BELUM ada (tidak dititip inline di data sparring & belum
+            // ada di cache). Tampilkan inisial dulu saja, lalu antre ambil
+            // logo tim ini satu-per-satu lewat requestTeamLogo() — begitu
+            // giliran tim ini selesai diambil, HANYA kartu ini yang
+            // diperbarui (updateSingleSparringLogo), tanpa membangun ulang
+            // seluruh daftar sparring.
+            const key = (typeof getTeamLogoKeyCustomer==='function') ? getTeamLogoKeyCustomer(name) : '';
+            if(key && typeof requestTeamLogo==='function'){
+              requestTeamLogo(name, () => { if(typeof updateSingleSparringLogo==='function') updateSingleSparringLogo(key); });
+            }
+            return `<div class="sparing-final-logo"${key?` data-team-key="${esc(key)}"`:''}><span class="sparing-final-logo-fallback">${initials(name)}</span></div>`;
+          }
           function active(item,now,today){const d=String(item?.tanggal||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||d<today)return false;if(d===today){const m=String(item?.jam||'').match(/(\d{1,2})(?::(\d{2}))?/);if(m){const h=+m[1],mi=+(m[2]||0);if(h>=0&&h<=23&&mi>=0&&mi<=59&&now>=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0,0))return false;}}return true;}
           function meta(item,ok){const d=item?.tanggal?String(item.tanggal).split('-').reverse().join('/'):'-';const j=esc(item?.jam||'-');return `<div class="${ok?'sparing-final-meta':'customer-sparring-meta'}"><span>📅 ${d}</span><span>⏰ ${j}</span><span class="${ok?'ok':'customer-sparring-status'}">${ok?'✓ SUDAH DAPAT LAWAN':'⌛ MENCARI LAWAN'}</span></div>`;}
           function formatTanggalIndoSaja(tgl){const hariArr=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];const bulanArr=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];const m=String(tgl||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '-';const dt=new Date(+m[1],+m[2]-1,+m[3]);const hari=hariArr[dt.getDay()],tggl=dt.getDate(),bln=bulanArr[dt.getMonth()],thn=dt.getFullYear();return `${hari}, ${tggl} ${bln} ${thn}`;}
@@ -8415,11 +8434,144 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             }
         }
 
-        window.renderCustomerMember = () => {
-            const list = document.getElementById('customer-member-list');
-            const countEl = document.getElementById('customer-member-count');
-            if(!list) return;
+        // Helper logo tim dipindah ke lingkup luar (bukan di dalam
+        // renderCustomerMember) supaya bisa dipakai bersama oleh proses
+        // pengambilan logo satu-per-satu di bawah.
+        const escapeHtmlCustomer = (value) => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
+        const initialsCustomer = (name) => String(name || 'TM').trim().split(/\s+/).slice(0,2).map(x => x[0]).join('').toUpperCase() || 'TM';
+        // Gunakan aturan pencocokan yang SAMA dengan web admin.
+        // Logo admin disimpan di Firebase: teamLogos/<encoded normalized nama>
+        // dengan field { nama, normalizedNama, logo, updatedAt }.
+        const normalizeTeamLogoNameCustomer = (value) => {
+            let normalized = String(value || '');
+            try { normalized = normalized.normalize('NFKC'); } catch(e) {}
+            return normalized.trim().replace(/\s+/g, ' ').toLowerCase();
+        };
+        const getTeamLogoKeyCustomer = (name) =>
+            encodeURIComponent(normalizeTeamLogoNameCustomer(name)).replace(/\./g, '%2E');
+        const logoToDataUrlCustomer = (value) => {
+            const raw = String(value || '').trim();
+            if(!raw) return '';
+            if(/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(raw)) return raw;
+            // Antisipasi data lama yang hanya menyimpan Base64 tanpa prefix.
+            if(/^[A-Za-z0-9+/=\r\n]+$/.test(raw.replace(/\s/g,''))) {
+                return 'data:image/png;base64,' + raw.replace(/\s/g,'');
+            }
+            return raw;
+        };
+        const getCustomerTeamLogo = (teamName) => {
+            const normalizedName = normalizeTeamLogoNameCustomer(teamName);
+            if(!normalizedName) return '';
 
+            const cache = globalCache.teamLogos || {};
+            const direct = cache[getTeamLogoKeyCustomer(normalizedName)];
+            const directLogo = logoToDataUrlCustomer(direct?.logo);
+            if(directLogo) return directLogo;
+
+            // Fallback untuk logo lama / key yang pernah dibuat berbeda.
+            const matched = Object.values(cache).find(entry => {
+                const entryName = normalizeTeamLogoNameCustomer(entry?.normalizedNama || entry?.nama || '');
+                return entryName === normalizedName && String(entry?.logo || '').trim();
+            });
+            return logoToDataUrlCustomer(matched?.logo);
+        };
+
+        // =====================================================================
+        // ANTRIAN PENGAMBILAN LOGO TIM — DIPAKAI BERSAMA OLEH HALAMAN MEMBER
+        // & SPARING, SUPAYA LOGO DI KEDUANYA SAMA-SAMA MUNCUL SATU-PER-SATU.
+        //
+        // Setiap kartu (Member atau Sparing) yang belum punya logo di cache
+        // cukup memanggil requestTeamLogo(nama, callback). Fungsi ini akan:
+        //   1. Langsung panggil callback kalau logonya sudah ada di cache.
+        //   2. Kalau belum, masukkan tim itu ke antrian (tanpa dobel kalau
+        //      tim yang sama diminta beberapa kali sekaligus dari kartu
+        //      berbeda) dan panggil callback begitu logonya SELESAI diambil.
+        // Antrian diproses SATU PER SATU — satu request Firebase per tim —
+        // jadi logo benar-benar tampil bertahap sesuai urutan permintaan,
+        // bukan diunduh borongan sekaligus.
+        //
+        // Pengambilan baru mulai jalan setelah browser idle (atau maksimal
+        // 1.5 detik), supaya tidak berebut bandwidth dengan data booking/
+        // jadwal yang harus tampil duluan — sama seperti sebelumnya.
+        // =====================================================================
+        let __teamLogoGateResolve;
+        const __teamLogoGate = new Promise(resolve => { __teamLogoGateResolve = resolve; });
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => __teamLogoGateResolve(), { timeout: 1500 });
+        } else {
+            setTimeout(() => __teamLogoGateResolve(), 800);
+        }
+
+        const teamLogoWaiters = new Map();   // key -> [callback, ...]
+        const teamLogoQueue = [];            // antrian {nama,key} yang belum diproses
+        const teamLogoQueued = new Set();    // cegah key yang sama masuk antrian dobel
+        let teamLogoQueueRunning = false;
+        let teamLogoFullFallbackPromise = null;
+
+        // Jaring pengaman SEKALI SAJA seumur sesi halaman: kalau ada key yang
+        // tidak ketemu lewat pengambilan langsung (mis. logo lama dengan key
+        // yang beda), baru node 'teamLogos' penuh diunduh SATU KALI untuk
+        // dicocokkan berdasarkan nama — tidak diulang tiap kali ada yang miss.
+        function ensureTeamLogoFullFallback() {
+            if(!teamLogoFullFallbackPromise) {
+                teamLogoFullFallbackPromise = get(ref(db, 'teamLogos'))
+                    .then(snap => { globalCache.__teamLogosFullFallback = snap.val() || {}; })
+                    .catch(() => { globalCache.__teamLogosFullFallback = {}; });
+            }
+            return teamLogoFullFallbackPromise;
+        }
+
+        async function runTeamLogoQueue() {
+            if(teamLogoQueueRunning) return;
+            teamLogoQueueRunning = true;
+            await __teamLogoGate;
+            while(teamLogoQueue.length) {
+                const { nama, key } = teamLogoQueue.shift();
+                teamLogoQueued.delete(key);
+                if(!globalCache.teamLogos[key]?.logo) {
+                    try {
+                        const snap = await get(ref(db, 'teamLogos/' + key));
+                        if(snap.exists()) {
+                            globalCache.teamLogos[key] = snap.val();
+                        } else {
+                            await ensureTeamLogoFullFallback();
+                            const normalizedName = normalizeTeamLogoNameCustomer(nama);
+                            const all = globalCache.__teamLogosFullFallback || {};
+                            const matchedKey = Object.keys(all).find(k => {
+                                const entry = all[k];
+                                const entryName = normalizeTeamLogoNameCustomer(entry?.normalizedNama || entry?.nama || '');
+                                return entryName === normalizedName && String(entry?.logo || '').trim();
+                            });
+                            if(matchedKey) globalCache.teamLogos[key] = all[matchedKey];
+                        }
+                    } catch(e) {}
+                }
+                const waiters = teamLogoWaiters.get(key) || [];
+                teamLogoWaiters.delete(key);
+                waiters.forEach(cb => { try { cb(); } catch(e) {} });
+            }
+            teamLogoQueueRunning = false;
+        }
+
+        function requestTeamLogo(nama, onReady) {
+            const key = getTeamLogoKeyCustomer(nama);
+            if(!key) return;
+            if(globalCache.teamLogos[key]?.logo) { if(onReady) onReady(); return; }
+            if(onReady) {
+                if(!teamLogoWaiters.has(key)) teamLogoWaiters.set(key, []);
+                teamLogoWaiters.get(key).push(onReady);
+            }
+            if(!teamLogoQueued.has(key)) {
+                teamLogoQueued.add(key);
+                teamLogoQueue.push({ nama, key });
+            }
+            runTeamLogoQueue();
+        }
+
+        // Daftar tim (member) yang dipakai baik oleh renderCustomerMember()
+        // maupun oleh proses pengambilan logo satu-per-satu di bawah, supaya
+        // urutannya selalu sama persis (ASDU FC dulu, dst).
+        function buildCustomerMemberTeams() {
             const unique = new Map();
 
             // 1) Member yang mempunyai jadwal tetap.
@@ -8456,9 +8608,17 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
                 });
             });
 
-            const teams = Array.from(unique.values()).sort((a,b) =>
+            return Array.from(unique.values()).sort((a,b) =>
                 String(a.nama || '').localeCompare(String(b.nama || ''), 'id', {sensitivity:'base'})
             );
+        }
+
+        window.renderCustomerMember = () => {
+            const list = document.getElementById('customer-member-list');
+            const countEl = document.getElementById('customer-member-count');
+            if(!list) return;
+
+            const teams = buildCustomerMemberTeams();
 
             if(countEl) countEl.textContent = `${teams.length} TIM`;
             if(!teams.length){
@@ -8466,60 +8626,86 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
                 return;
             }
 
-            const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[ch]));
-            const initials = (name) => String(name || 'TM').trim().split(/\s+/).slice(0,2).map(x => x[0]).join('').toUpperCase() || 'TM';
-
-            // Gunakan aturan pencocokan yang SAMA dengan web admin.
-            // Logo admin disimpan di Firebase: teamLogos/<encoded normalized nama>
-            // dengan field { nama, normalizedNama, logo, updatedAt }.
-            const normalizeTeamLogoNameCustomer = (value) => {
-                let normalized = String(value || '');
-                try { normalized = normalized.normalize('NFKC'); } catch(e) {}
-                return normalized.trim().replace(/\s+/g, ' ').toLowerCase();
-            };
-            const getTeamLogoKeyCustomer = (name) =>
-                encodeURIComponent(normalizeTeamLogoNameCustomer(name)).replace(/\./g, '%2E');
-            const logoToDataUrlCustomer = (value) => {
-                const raw = String(value || '').trim();
-                if(!raw) return '';
-                if(/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(raw)) return raw;
-                // Antisipasi data lama yang hanya menyimpan Base64 tanpa prefix.
-                if(/^[A-Za-z0-9+/=\r\n]+$/.test(raw.replace(/\s/g,''))) {
-                    return 'data:image/png;base64,' + raw.replace(/\s/g,'');
-                }
-                return raw;
-            };
-            const getCustomerTeamLogo = (teamName) => {
-                const normalizedName = normalizeTeamLogoNameCustomer(teamName);
-                if(!normalizedName) return '';
-
-                const cache = globalCache.teamLogos || {};
-                const direct = cache[getTeamLogoKeyCustomer(normalizedName)];
-                const directLogo = logoToDataUrlCustomer(direct?.logo);
-                if(directLogo) return directLogo;
-
-                // Fallback untuk logo lama / key yang pernah dibuat berbeda.
-                const matched = Object.values(cache).find(entry => {
-                    const entryName = normalizeTeamLogoNameCustomer(entry?.normalizedNama || entry?.nama || '');
-                    return entryName === normalizedName && String(entry?.logo || '').trim();
-                });
-                return logoToDataUrlCustomer(matched?.logo);
-            };
+            const escapeHtml = escapeHtmlCustomer;
+            const initials = initialsCustomer;
 
             list.innerHTML = teams.map(item => {
                 const nama = escapeHtml(item.nama);
+                const teamKey = escapeHtml(getTeamLogoKeyCustomer(item.nama));
                 const logo = getCustomerTeamLogo(item.nama) || logoToDataUrlCustomer(item.logo || item.logoTim || item.logoUrl || item.fotoLogo);
                 const safeLogo = escapeHtml(logo);
                 const fallback = escapeHtml(initials(item.nama));
+                // Kalau logo BELUM ada di cache, tampilkan inisial dulu saja
+                // (bukan menunggu), lalu antre ambil logo tim ini satu-per-
+                // satu lewat requestTeamLogo(). Begitu giliran tim ini
+                // selesai diambil, updateSingleCustomerMemberLogo() akan
+                // menimpa HANYA kartu ini, tanpa membangun ulang seluruh grid.
+                if(!logo) {
+                    requestTeamLogo(item.nama, () => updateSingleCustomerMemberLogo(item));
+                }
                 const logoHtml = logo
-                    ? `<img src="${safeLogo}" alt="Logo ${nama}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="customer-member-logo-fallback" style="display:none">${fallback}</span>`
+                    ? `<img src="${safeLogo}" alt="Logo ${nama}" loading="lazy" class="customer-member-logo-fade is-visible" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="customer-member-logo-fallback" style="display:none">${fallback}</span>`
                     : `<span class="customer-member-logo-fallback">${fallback}</span>`;
                 return `<article class="customer-member-card">
-                    <div class="customer-member-logo">${logoHtml}</div>
+                    <div class="customer-member-logo" data-team-key="${teamKey}">${logoHtml}</div>
                     <div class="customer-member-name">${nama}</div>
                 </article>`;
             }).join('');
         };
+
+        // Update HANYA satu kartu logo tim (tanpa membangun ulang seluruh
+        // grid), supaya logo lain yang sudah tampil tidak ikut "berkedip"
+        // setiap kali ada satu logo baru yang selesai diunduh.
+        function updateSingleCustomerMemberLogo(item) {
+            const list = document.getElementById('customer-member-list');
+            if(!list) return;
+            const key = getTeamLogoKeyCustomer(item.nama);
+            let holder;
+            try {
+                holder = list.querySelector(`.customer-member-logo[data-team-key="${CSS.escape(key)}"]`);
+            } catch(e) {
+                holder = Array.from(list.querySelectorAll('.customer-member-logo')).find(el => el.getAttribute('data-team-key') === key);
+            }
+            if(!holder || holder.querySelector('img')) return; // kartu tak ditemukan / logo sudah tampil
+
+            const logo = getCustomerTeamLogo(item.nama) || logoToDataUrlCustomer(item.logo || item.logoTim || item.logoUrl || item.fotoLogo);
+            if(!logo) return;
+
+            const nama = escapeHtmlCustomer(item.nama);
+            const safeLogo = escapeHtmlCustomer(logo);
+            const fallback = escapeHtmlCustomer(initialsCustomer(item.nama));
+            holder.innerHTML = `<img src="${safeLogo}" alt="Logo ${nama}" loading="lazy" class="customer-member-logo-fade" onload="this.classList.add('is-visible')" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="customer-member-logo-fallback" style="display:none">${fallback}</span>`;
+        }
+
+        // Sama seperti updateSingleCustomerMemberLogo(), tapi untuk kartu
+        // di halaman Sparing. Satu tim bisa muncul di beberapa kartu
+        // sekaligus (mis. sebagai timA di satu pertandingan & timB di
+        // pertandingan lain) — semuanya diperbarui, tapi masing-masing
+        // hanya kalau belum ada gambar (biar tidak menimpa logo yang
+        // sudah tampil).
+        function updateSingleSparringLogo(key) {
+            const list = document.getElementById('customer-sparring-list');
+            if(!list) return;
+            let holders;
+            try {
+                holders = list.querySelectorAll(`.sparing-final-logo[data-team-key="${CSS.escape(key)}"]`);
+            } catch(e) {
+                holders = Array.from(list.querySelectorAll('.sparing-final-logo')).filter(el => el.getAttribute('data-team-key') === key);
+            }
+            if(!holders || !holders.length) return;
+
+            const entry = (globalCache.teamLogos || {})[key];
+            const logo = logoToDataUrlCustomer(entry?.logo);
+            if(!logo) return;
+            const safeLogo = escapeHtmlCustomer(logo);
+
+            holders.forEach(holder => {
+                if(holder.querySelector('img')) return; // sudah tampil
+                const fallbackSpan = holder.querySelector('.sparing-final-logo-fallback');
+                const fallbackText = fallbackSpan ? fallbackSpan.textContent : '';
+                holder.innerHTML = `<img src="${safeLogo}" alt="Logo Tim" loading="lazy" class="customer-member-logo-fade" onload="this.classList.add('is-visible')" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="sparing-final-logo-fallback" style="display:none">${fallbackText}</span>`;
+            });
+        }
 
         function renderAll() {
             // Catatan: renderGridJadwal(), renderTabelBooking(), renderRekapHarian(),
@@ -8606,29 +8792,23 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
         // logonya sendiri berat, solusi permanennya tetap harus
         // memperkecil ukuran gambar logo yang tersimpan di Firebase
         // (lihat tools/kompres-logo.html yang disiapkan terpisah).
-        function startTeamLogosListener() {
-            if (window.__teamLogosListenerStarted) return;
-            window.__teamLogosListenerStarted = true;
-            const t0 = performance.now();
-            onValue(ref(db, 'teamLogos'), (snapshot) => {
-                globalCache.teamLogos = snapshot.val() || {};
-                try {
-                    const sizeKB = (JSON.stringify(globalCache.teamLogos).length / 1024).toFixed(0);
-                    const ms = (performance.now() - t0).toFixed(0);
-                    console.log(`[teamLogos] ukuran data: ${sizeKB} KB, waktu unduh: ${ms} ms`);
-                } catch(e) {}
-                renderCustomerMember();
-                if (typeof window.renderCustomerSparring === 'function') window.renderCustomerSparring();
-            });
-        }
-        // Ditunda ke saat browser sedang idle (atau maksimal 1.5 detik
-        // setelah load) supaya request data booking/jadwal yang kritikal
-        // selalu didahulukan.
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(startTeamLogosListener, { timeout: 1500 });
-        } else {
-            setTimeout(startTeamLogosListener, 800);
-        }
+        // PATCH PERFORMA — LOGO TIM DIAMBIL SATU-PER-SATU (BUKAN SATU PAKET
+        // BESAR SEKALIGUS), DAN DIPAKAI BERSAMA OLEH MEMBER & SPARING:
+        // Sebelumnya seluruh node 'teamLogos' diambil dalam SATU kali baca
+        // (onValue di root 'teamLogos'). Firebase Realtime Database
+        // mengirim seluruh isi node itu sebagai satu paket JSON ke browser
+        // SEBELUM event apa pun ditembakkan — jadi logo tetap baru "muncul"
+        // bersamaan setelah paket besar itu selesai diunduh (persis yang
+        // terlihat sebelumnya: loading lama, lalu semua logo nongol serentak).
+        //
+        // Sekarang setiap kartu (Member maupun Sparing) yang belum punya
+        // logo memanggil requestTeamLogo() sendiri saat dirender (lihat
+        // renderCustomerMember() di atas & logoHtml() pada bagian Sparing).
+        // Antrian requestTeamLogo memprosesnya SATU PER SATU — satu request
+        // Firebase per tim, berurutan sesuai urutan tampil — dan baru mulai
+        // jalan setelah browser idle (atau maksimal 1.5 detik), supaya tidak
+        // berebut bandwidth dengan data booking/jadwal yang harus tampil
+        // duluan. Tidak perlu scheduler terpisah lagi di sini.
 
         // Dipersempit: hanya ambil booking dengan tgl >= tanggal 1 bulan berjalan
         // (bukan cuma "hari ini"). Ini tetap membuat loader jadwal/booking
