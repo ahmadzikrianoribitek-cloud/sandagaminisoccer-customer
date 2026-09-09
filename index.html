@@ -8590,10 +8590,45 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
             renderCustomerMember();
         });
 
-        onValue(ref(db, 'teamLogos'), (snapshot) => {
-            globalCache.teamLogos = snapshot.val() || {};
-            renderCustomerMember();
-        });
+        // PATCH PERFORMA — LOGO TIM DITUNDA (LAZY LOAD):
+        // Node 'teamLogos' menyimpan gambar logo dalam bentuk base64 langsung
+        // di database (bukan link ke Storage). Kalau logo yang diupload
+        // beresolusi besar (foto asli dari HP, belum di-resize), total data
+        // 17 logo bisa jadi puluhan MB dan diunduh SEKALIGUS bareng data
+        // booking/jadwal yang justru harus tampil duluan. Ini bikin waktu
+        // buka pertama terasa sangat lambat (30 detik - 1 menit).
+        //
+        // Solusi di sini: tunda pengambilan teamLogos sampai konten utama
+        // (jadwal/booking) sudah tampil, supaya bandwidth tidak dipakai
+        // berebutan. Logo tetap akan muncul beberapa saat kemudian begitu
+        // datanya selesai diunduh (otomatis re-render), tanpa memblokir
+        // tampilan awal. Ini HANYA menunda urutan unduhan — kalau file
+        // logonya sendiri berat, solusi permanennya tetap harus
+        // memperkecil ukuran gambar logo yang tersimpan di Firebase
+        // (lihat tools/kompres-logo.html yang disiapkan terpisah).
+        function startTeamLogosListener() {
+            if (window.__teamLogosListenerStarted) return;
+            window.__teamLogosListenerStarted = true;
+            const t0 = performance.now();
+            onValue(ref(db, 'teamLogos'), (snapshot) => {
+                globalCache.teamLogos = snapshot.val() || {};
+                try {
+                    const sizeKB = (JSON.stringify(globalCache.teamLogos).length / 1024).toFixed(0);
+                    const ms = (performance.now() - t0).toFixed(0);
+                    console.log(`[teamLogos] ukuran data: ${sizeKB} KB, waktu unduh: ${ms} ms`);
+                } catch(e) {}
+                renderCustomerMember();
+                if (typeof window.renderCustomerSparring === 'function') window.renderCustomerSparring();
+            });
+        }
+        // Ditunda ke saat browser sedang idle (atau maksimal 1.5 detik
+        // setelah load) supaya request data booking/jadwal yang kritikal
+        // selalu didahulukan.
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(startTeamLogosListener, { timeout: 1500 });
+        } else {
+            setTimeout(startTeamLogosListener, 800);
+        }
 
         // Dipersempit: hanya ambil booking dengan tgl >= tanggal 1 bulan berjalan
         // (bukan cuma "hari ini"). Ini tetap membuat loader jadwal/booking
