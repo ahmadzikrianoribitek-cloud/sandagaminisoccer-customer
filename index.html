@@ -8704,6 +8704,24 @@ Kalau sudah sesuai, mohon dibantu konfirmasi ya min. Terima kasih 🙏`;
                 const fallbackSpan = holder.querySelector('.sparing-final-logo-fallback');
                 const fallbackText = fallbackSpan ? fallbackSpan.textContent : '';
                 holder.innerHTML = `<img src="${safeLogo}" alt="Logo Tim" loading="lazy" class="customer-member-logo-fade" onload="this.classList.add('is-visible')" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><span class="sparing-final-logo-fallback" style="display:none">${fallbackText}</span>`;
+
+                // FIX: begitu logo tampil di kartu, langsung sinkronkan juga ke
+                // atribut data-mf-logo-a/data-mf-logo-b pada kartu pembungkus
+                // (.match-pending-trigger / .match-founded-trigger). Atribut inilah
+                // yang dibaca window.openMatchFoundedPoster() saat kartu diklik —
+                // tanpa langkah ini, poster baru ikut menampilkan logo setelah
+                // seluruh daftar sparring dirender ulang dari awal (nunggu snapshot
+                // Firebase berikutnya), sehingga terasa lambat walau di kartu logo
+                // sudah kelihatan.
+                const cardEl = holder.closest('.match-pending-trigger, .match-founded-trigger');
+                if(cardEl){
+                    if(getTeamLogoKeyCustomer(cardEl.dataset.mfTeamA || '') === key){
+                        cardEl.dataset.mfLogoA = logo;
+                    }
+                    if(getTeamLogoKeyCustomer(cardEl.dataset.mfTeamB || '') === key){
+                        cardEl.dataset.mfLogoB = logo;
+                    }
+                }
             });
         }
 
