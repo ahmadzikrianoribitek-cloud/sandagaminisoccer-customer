@@ -27229,7 +27229,7 @@ if ('serviceWorker' in navigator) {
    Muncul otomatis sekali (lalu tidak mengganggu lagi) menjelaskan
    dengan bahasa awam kenapa customer sebaiknya install aplikasinya.
    =================================================================== */
-#pwa-install-modal{
+#pwa-install-modal, #pwa-ios-modal{
   display:none;
   position:fixed;
   inset:0;
@@ -27241,7 +27241,7 @@ if ('serviceWorker' in navigator) {
   -webkit-backdrop-filter:blur(2px);
   backdrop-filter:blur(2px);
 }
-#pwa-install-modal.show{ display:flex; }
+#pwa-install-modal.show, #pwa-ios-modal.show{ display:flex; }
 .pwa-modal-card{
   width:100%;
   max-width:360px;
@@ -27277,6 +27277,20 @@ if ('serviceWorker' in navigator) {
   background:linear-gradient(135deg,#1d4ed8,#2563eb);
   box-shadow:0 8px 20px rgba(29,78,216,.35);
 }
+.pwa-modal-steps{
+  list-style:none;margin:0 0 20px;padding:0;text-align:left;
+  display:flex;flex-direction:column;gap:12px;
+}
+.pwa-modal-steps li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.78rem;line-height:1.5;color:#334155;font-weight:650;
+}
+.pwa-modal-steps .pwa-step-num{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+  background:#dbeafe;color:#1d4ed8;font-size:.72rem;font-weight:950;
+  display:grid;place-items:center;
+}
+.pwa-modal-steps .pwa-step-icon{ font-size:1rem;line-height:1; }
 </style>
 
 <!-- Markup pop-up (disembunyikan sampai layak ditampilkan lewat JS) -->
@@ -27297,14 +27311,48 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- Markup pop-up KHUSUS IPHONE (Safari tidak punya tombol install otomatis,
+     jadi customer perlu dituntun lewat menu Share secara manual) -->
+<div id="pwa-ios-modal">
+  <div class="pwa-modal-card">
+    <div class="pwa-modal-icon"><img alt="" src="ikon.png"/></div>
+    <h3 class="pwa-modal-title">Pasang Aplikasi Booking?</h3>
+    <p class="pwa-modal-text">
+      Di iPhone, cara pasangnya sedikit beda — ikuti 3 langkah gampang ini
+      di Safari:
+    </p>
+    <ol class="pwa-modal-steps">
+      <li><span class="pwa-step-num">1</span><span>Tap ikon <b>Share</b> <span class="pwa-step-icon">⬆️</span> di bagian bawah (atau atas) layar Safari</span></li>
+      <li><span class="pwa-step-num">2</span><span>Scroll ke bawah, pilih <b>“Add to Home Screen” / “Tambah ke Layar Utama”</b> <span class="pwa-step-icon">➕</span></span></li>
+      <li><span class="pwa-step-num">3</span><span>Tap <b>“Add” / “Tambah”</b> di pojok kanan atas — selesai!</span></li>
+    </ol>
+    <div class="pwa-modal-actions">
+      <button class="pwa-modal-btn pwa-modal-btn-yes" id="pwa-ios-modal-close" style="width:100%" type="button">Mengerti</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   var deferredInstallPrompt = null;
   var HEAD_SELECTOR = '.customer-member-page-head, .customer-booking-page-head';
   var DISMISS_KEY = 'pwaInstallModalDismissed';
+  var IOS_DISMISS_KEY = 'pwaIosModalDismissed';
   var modal = document.getElementById('pwa-install-modal');
   var btnNo = document.getElementById('pwa-modal-btn-no');
   var btnYes = document.getElementById('pwa-modal-btn-yes');
+  var iosModal = document.getElementById('pwa-ios-modal');
+  var iosBtnClose = document.getElementById('pwa-ios-modal-close');
+
+  // Deteksi iPhone/iPad (Safari tidak punya event beforeinstallprompt,
+  // jadi harus dituntun manual lewat menu Share).
+  function isIos() {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent) && !window.MSStream;
+  }
+
+  function isStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
 
   // Pasang tombol kecil ke setiap kartu header (booking/sparing/member/
   // jadwal/harga) kalau belum ada — sebagai jalan pintas cadangan.
@@ -27340,21 +27388,18 @@ if ('serviceWorker' in navigator) {
     });
   }
 
-  function wasDismissedBefore() {
-    try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) { return false; }
+  function wasDismissedBefore(key) {
+    try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
   }
 
-  function rememberDismissed() {
-    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
+  function rememberDismissed(key) {
+    try { localStorage.setItem(key, '1'); } catch (e) {}
   }
 
-  function showModal() {
-    modal.classList.add('show');
-  }
-
-  function hideModal() {
-    modal.classList.remove('show');
-  }
+  function showModal() { modal.classList.add('show'); }
+  function hideModal() { modal.classList.remove('show'); }
+  function showIosModal() { iosModal.classList.add('show'); }
+  function hideIosModal() { iosModal.classList.remove('show'); }
 
   function runInstallPrompt() {
     if (!deferredInstallPrompt) return;
@@ -27365,50 +27410,64 @@ if ('serviceWorker' in navigator) {
     promptEvent.userChoice.finally(function () {});
   }
 
-  // Event ini otomatis ditembak Chrome kalau web sudah memenuhi syarat PWA
+  // ===== ALUR ANDROID/CHROME (pakai beforeinstallprompt) =====
   window.addEventListener('beforeinstallprompt', function (event) {
     event.preventDefault();
     deferredInstallPrompt = event;
     showInlineButtons();
-    // Pop-up hanya ditampilkan sekali (kunjungan pertama / belum pernah
-    // ditutup sebelumnya), lalu tidak mengganggu lagi di kunjungan berikutnya.
-    if (!wasDismissedBefore()) {
+    if (!wasDismissedBefore(DISMISS_KEY)) {
       setTimeout(showModal, 900);
     }
   });
 
-  // Tombol "Tidak, Nanti" di pop-up
   btnNo.addEventListener('click', function () {
     hideModal();
-    rememberDismissed();
+    rememberDismissed(DISMISS_KEY);
   });
 
-  // Tombol "Install" di pop-up
   btnYes.addEventListener('click', function () {
     hideModal();
-    rememberDismissed();
+    rememberDismissed(DISMISS_KEY);
     runInstallPrompt();
   });
 
-  // Klik tombol kecil cadangan di header
-  document.addEventListener('click', function (event) {
-    var btn = event.target.closest('.pwa-install-inline-btn');
-    if (!btn) return;
-    runInstallPrompt();
-  });
-
-  // Sembunyikan semuanya kalau aplikasi sudah ke-install
   window.addEventListener('appinstalled', function () {
     hideModal();
     hideInlineButtons();
-    rememberDismissed();
+    rememberDismissed(DISMISS_KEY);
     deferredInstallPrompt = null;
+  });
+
+  // ===== ALUR IPHONE/SAFARI (tuntunan manual, tidak ada prompt otomatis) =====
+  iosBtnClose.addEventListener('click', function () {
+    hideIosModal();
+    rememberDismissed(IOS_DISMISS_KEY);
+  });
+
+  if (isIos() && !isStandaloneMode()) {
+    showInlineButtons(); // tombol kecil di header tetap tampil sebagai jalan pintas
+    if (!wasDismissedBefore(IOS_DISMISS_KEY)) {
+      setTimeout(showIosModal, 900);
+    }
+  }
+
+  // Klik tombol kecil cadangan di header: kalau Android → jalankan prompt asli,
+  // kalau iPhone → buka lagi tuntunan manual.
+  document.addEventListener('click', function (event) {
+    var btn = event.target.closest('.pwa-install-inline-btn');
+    if (!btn) return;
+    if (isIos()) {
+      showIosModal();
+    } else {
+      runInstallPrompt();
+    }
   });
 
   // Kalau dibuka dalam mode standalone (sudah ter-install), jangan
   // tampilkan pop-up maupun tombol sama sekali.
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+  if (isStandaloneMode()) {
     hideModal();
+    hideIosModal();
     hideInlineButtons();
     deferredInstallPrompt = null;
   }
