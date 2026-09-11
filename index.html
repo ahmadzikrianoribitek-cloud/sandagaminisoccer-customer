@@ -27196,11 +27196,11 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <!-- ===================================================================
-     PWA — TOMBOL "INSTALL APLIKASI" DI HEADER
+     PWA — TOMBOL "INSTALL APLIKASI" DI HEADER (jalan pintas cadangan)
      Tombol bulat kecil ini disisipkan otomatis lewat JS ke pojok kanan
      atas kartu header setiap halaman (Booking, Sparing, Member, Jadwal,
-     Daftar Harga) — bukan mengambang lagi. Tombol cuma tampil kalau
-     Chrome mendeteksi web ini bisa di-install.
+     Daftar Harga). Ini cadangan untuk customer yang tadinya pilih
+     "Nanti" di pop-up tapi berubah pikiran mau install belakangan.
      =================================================================== -->
 <style>
 .pwa-install-inline-btn{
@@ -27223,14 +27223,91 @@ if ('serviceWorker' in navigator) {
   cursor:pointer;
 }
 .pwa-install-inline-btn:active{ transform:scale(.94); }
+
+/* ===================================================================
+   PWA — POP-UP "INSTALL APLIKASI" UNTUK KUNJUNGAN PERTAMA
+   Muncul otomatis sekali (lalu tidak mengganggu lagi) menjelaskan
+   dengan bahasa awam kenapa customer sebaiknya install aplikasinya.
+   =================================================================== */
+#pwa-install-modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(15,23,42,.55);
+  -webkit-backdrop-filter:blur(2px);
+  backdrop-filter:blur(2px);
+}
+#pwa-install-modal.show{ display:flex; }
+.pwa-modal-card{
+  width:100%;
+  max-width:360px;
+  background:#fff;
+  border-radius:22px;
+  padding:26px 22px 22px;
+  text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+  animation:pwaModalPop .25s ease;
+}
+@keyframes pwaModalPop{
+  from{ opacity:0; transform:scale(.92); }
+  to{ opacity:1; transform:scale(1); }
+}
+.pwa-modal-icon{
+  width:60px;height:60px;margin:0 auto 14px;
+  border-radius:18px;overflow:hidden;
+  background:#eff6ff;display:grid;place-items:center;
+  box-shadow:0 6px 16px rgba(37,99,235,.18);
+}
+.pwa-modal-icon img{ width:100%;height:100%;object-fit:contain; }
+.pwa-modal-title{ margin:0 0 8px;font-size:1.05rem;font-weight:950;color:#0f172a; }
+.pwa-modal-text{ margin:0 0 20px;font-size:.8rem;line-height:1.55;color:#475569;font-weight:600; }
+.pwa-modal-text b{ color:#1d4ed8; }
+.pwa-modal-actions{ display:flex;gap:10px; }
+.pwa-modal-btn{
+  flex:1;padding:12px 10px;border-radius:13px;font-size:.8rem;font-weight:850;
+  cursor:pointer;font-family:inherit;
+}
+.pwa-modal-btn-no{ border:1.5px solid #cbd5e1;background:#fff;color:#64748b; }
+.pwa-modal-btn-yes{
+  border:none;color:#fff;
+  background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  box-shadow:0 8px 20px rgba(29,78,216,.35);
+}
 </style>
+
+<!-- Markup pop-up (disembunyikan sampai layak ditampilkan lewat JS) -->
+<div id="pwa-install-modal">
+  <div class="pwa-modal-card">
+    <div class="pwa-modal-icon"><img alt="" src="ikon.png"/></div>
+    <h3 class="pwa-modal-title">Pasang Aplikasi Booking?</h3>
+    <p class="pwa-modal-text">
+      Supaya lebih praktis, kamu bisa pasang <b>Booking Sandaga Minisoccer</b>
+      di layar utama HP seperti aplikasi biasa. Sekali pasang, lain kali
+      booking tinggal tap icon-nya — tidak perlu buka Chrome & ketik alamat
+      web lagi.
+    </p>
+    <div class="pwa-modal-actions">
+      <button class="pwa-modal-btn pwa-modal-btn-no" id="pwa-modal-btn-no" type="button">Tidak, Nanti</button>
+      <button class="pwa-modal-btn pwa-modal-btn-yes" id="pwa-modal-btn-yes" type="button">📲 Install</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   var deferredInstallPrompt = null;
   var HEAD_SELECTOR = '.customer-member-page-head, .customer-booking-page-head';
+  var DISMISS_KEY = 'pwaInstallModalDismissed';
+  var modal = document.getElementById('pwa-install-modal');
+  var btnNo = document.getElementById('pwa-modal-btn-no');
+  var btnYes = document.getElementById('pwa-modal-btn-yes');
 
   // Pasang tombol kecil ke setiap kartu header (booking/sparing/member/
-  // jadwal/harga) kalau belum ada.
+  // jadwal/harga) kalau belum ada — sebagai jalan pintas cadangan.
   function ensureInstallButtons() {
     document.querySelectorAll(HEAD_SELECTOR).forEach(function (head) {
       if (head.querySelector('.pwa-install-inline-btn')) return;
@@ -27247,51 +27324,93 @@ if ('serviceWorker' in navigator) {
 
   ensureInstallButtons();
   window.addEventListener('load', ensureInstallButtons);
-  // Beberapa halaman dirender belakangan oleh JS lain — cek ulang sebentar.
   setTimeout(ensureInstallButtons, 1200);
   setTimeout(ensureInstallButtons, 3000);
 
-  function showAllButtons() {
+  function showInlineButtons() {
     ensureInstallButtons();
     document.querySelectorAll('.pwa-install-inline-btn').forEach(function (b) {
       b.style.display = 'flex';
     });
   }
 
-  function hideAllButtons() {
+  function hideInlineButtons() {
     document.querySelectorAll('.pwa-install-inline-btn').forEach(function (b) {
       b.style.display = 'none';
     });
+  }
+
+  function wasDismissedBefore() {
+    try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch (e) { return false; }
+  }
+
+  function rememberDismissed() {
+    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
+  }
+
+  function showModal() {
+    modal.classList.add('show');
+  }
+
+  function hideModal() {
+    modal.classList.remove('show');
+  }
+
+  function runInstallPrompt() {
+    if (!deferredInstallPrompt) return;
+    var promptEvent = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    hideInlineButtons();
+    promptEvent.prompt();
+    promptEvent.userChoice.finally(function () {});
   }
 
   // Event ini otomatis ditembak Chrome kalau web sudah memenuhi syarat PWA
   window.addEventListener('beforeinstallprompt', function (event) {
     event.preventDefault();
     deferredInstallPrompt = event;
-    showAllButtons();
+    showInlineButtons();
+    // Pop-up hanya ditampilkan sekali (kunjungan pertama / belum pernah
+    // ditutup sebelumnya), lalu tidak mengganggu lagi di kunjungan berikutnya.
+    if (!wasDismissedBefore()) {
+      setTimeout(showModal, 900);
+    }
   });
 
-  // Klik salah satu tombol (yang sedang terlihat di halaman aktif)
+  // Tombol "Tidak, Nanti" di pop-up
+  btnNo.addEventListener('click', function () {
+    hideModal();
+    rememberDismissed();
+  });
+
+  // Tombol "Install" di pop-up
+  btnYes.addEventListener('click', function () {
+    hideModal();
+    rememberDismissed();
+    runInstallPrompt();
+  });
+
+  // Klik tombol kecil cadangan di header
   document.addEventListener('click', function (event) {
     var btn = event.target.closest('.pwa-install-inline-btn');
-    if (!btn || !deferredInstallPrompt) return;
-    hideAllButtons();
-    deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.finally(function () {
-      deferredInstallPrompt = null;
-    });
+    if (!btn) return;
+    runInstallPrompt();
   });
 
-  // Sembunyikan tombol kalau aplikasi sudah ke-install
+  // Sembunyikan semuanya kalau aplikasi sudah ke-install
   window.addEventListener('appinstalled', function () {
-    hideAllButtons();
+    hideModal();
+    hideInlineButtons();
+    rememberDismissed();
     deferredInstallPrompt = null;
   });
 
   // Kalau dibuka dalam mode standalone (sudah ter-install), jangan
-  // tampilkan tombol sama sekali.
+  // tampilkan pop-up maupun tombol sama sekali.
   if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-    hideAllButtons();
+    hideModal();
+    hideInlineButtons();
+    deferredInstallPrompt = null;
   }
 })();
 </script>
