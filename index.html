@@ -27194,4 +27194,69 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ===================================================================
+     PWA — TOMBOL "INSTALL APLIKASI" CUSTOM
+     Tombol ini otomatis muncul (mengambang di pojok kanan bawah) begitu
+     Chrome mendeteksi web ini bisa di-install. Kalau browser tidak
+     mendukung PWA (misal Safari iPhone), tombol ini tidak akan pernah
+     muncul — customer di iPhone tetap harus pakai Share > Add to Home
+     Screen secara manual seperti biasa.
+     =================================================================== -->
+<button id="pwa-install-btn" style="
+  display:none;
+  position:fixed;
+  right:16px;
+  bottom:20px;
+  z-index:9999;
+  align-items:center;
+  gap:8px;
+  padding:12px 18px;
+  border:none;
+  border-radius:999px;
+  background:linear-gradient(135deg,#1d4ed8,#2563eb);
+  color:#fff;
+  font-weight:800;
+  font-size:14px;
+  font-family:inherit;
+  box-shadow:0 8px 24px rgba(29,78,216,.45);
+  cursor:pointer;
+">
+  📲 Install Aplikasi
+</button>
+
+<script>
+(function () {
+  var deferredInstallPrompt = null;
+  var installBtn = document.getElementById('pwa-install-btn');
+
+  // Event ini otomatis ditembak Chrome kalau web sudah memenuhi syarat PWA
+  window.addEventListener('beforeinstallprompt', function (event) {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    installBtn.style.display = 'inline-flex';
+  });
+
+  installBtn.addEventListener('click', function () {
+    if (!deferredInstallPrompt) return;
+    installBtn.style.display = 'none';
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(function () {
+      deferredInstallPrompt = null;
+    });
+  });
+
+  // Sembunyikan tombol kalau aplikasi sudah ke-install
+  window.addEventListener('appinstalled', function () {
+    installBtn.style.display = 'none';
+    deferredInstallPrompt = null;
+  });
+
+  // Kalau ternyata sudah dibuka dalam mode standalone (sudah ter-install),
+  // jangan tampilkan tombol sama sekali.
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    installBtn.style.display = 'none';
+  }
+})();
+</script>
 </body></html>
