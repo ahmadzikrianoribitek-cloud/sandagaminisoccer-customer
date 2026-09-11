@@ -1,20 +1,31 @@
 {
-  "name": "SANDAGA MINISOCCER 2",
-  "short_name": "MINISOCCER",
+  "name": "Booking Lapangan",
+  "short_name": "Booking",
+  "description": "Aplikasi booking lapangan online",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#1d4ed8",
   "icons": [
     {
       "src": "ikon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "ikon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ikon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

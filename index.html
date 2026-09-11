@@ -5,6 +5,11 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>BOOKING LAPANGAN</title>
+<meta content="#1d4ed8" name="theme-color"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="BOOKING LAPANGAN" name="apple-mobile-web-app-title"/>
 <!-- Penghubung Manifest untuk Android/Chrome -->
 <link href="manifest.json" rel="manifest"/>
 <!-- Ikon Standar & Apple Touch Icon -->
@@ -27170,4 +27175,23 @@ main {
   background: rgba(255,255,255,.85) !important;
 }
 </style>
+
+<!-- ===================================================================
+     PWA — PENDAFTARAN SERVICE WORKER
+     Wajib ada agar Chrome/Android memunculkan pop-up
+     "Add to Home Screen" / "Install Aplikasi".
+     File sw.js dan manifest.json harus diletakkan di folder
+     yang SAMA dengan file index.html ini di server/hosting.
+     =================================================================== -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      console.log('Service Worker terdaftar:', reg.scope);
+    }).catch(function (err) {
+      console.log('Gagal mendaftarkan Service Worker:', err);
+    });
+  });
+}
+</script>
 </body></html>
