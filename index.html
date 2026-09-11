@@ -27206,23 +27206,25 @@ if ('serviceWorker' in navigator) {
 <button id="pwa-install-btn" style="
   display:none;
   position:fixed;
-  right:16px;
-  bottom:20px;
+  right:12px;
+  top:calc(env(safe-area-inset-top, 0px) + 10px);
   z-index:9999;
   align-items:center;
-  gap:8px;
-  padding:12px 18px;
+  gap:6px;
+  padding:8px 14px;
   border:none;
   border-radius:999px;
   background:linear-gradient(135deg,#1d4ed8,#2563eb);
   color:#fff;
   font-weight:800;
-  font-size:14px;
+  font-size:12px;
+  line-height:1;
   font-family:inherit;
-  box-shadow:0 8px 24px rgba(29,78,216,.45);
+  box-shadow:0 6px 16px rgba(29,78,216,.40);
   cursor:pointer;
+  white-space:nowrap;
 ">
-  📲 Install Aplikasi
+  📲 Install
 </button>
 
 <script>
